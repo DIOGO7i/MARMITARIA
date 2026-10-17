@@ -1,0 +1,189 @@
+@import './theme-vars.css' layer(base);
+@import 'tailwindcss';
+
+@custom-variant dark (&:is(.dark *));
+
+/* Identidade visual da Gisa (a partir da logo) */
+@theme {
+  --font-display: 'Oranienbaum', 'Times New Roman', Georgia, serif;
+  --font-slogan: 'Josefin Sans', 'Segoe UI', Arial, sans-serif;
+  --color-logo: #FDD661;      /* amarelo da logo — igual nos dois temas */
+  --color-logo-ink: #986400;  /* marrom das letras da logo */
+}
+
+@theme {
+  --color-slate-50: rgb(var(--c-slate-50));
+  --color-slate-100: rgb(var(--c-slate-100));
+  --color-slate-200: rgb(var(--c-slate-200));
+  --color-slate-300: rgb(var(--c-slate-300));
+  --color-slate-400: rgb(var(--c-slate-400));
+  --color-slate-500: rgb(var(--c-slate-500));
+  --color-slate-600: rgb(var(--c-slate-600));
+  --color-slate-700: rgb(var(--c-slate-700));
+  --color-slate-800: rgb(var(--c-slate-800));
+  --color-slate-900: rgb(var(--c-slate-900));
+  --color-slate-950: rgb(var(--c-slate-950));
+
+  --color-amber-50: rgb(var(--c-amber-50));
+  --color-amber-100: rgb(var(--c-amber-100));
+  --color-amber-200: rgb(var(--c-amber-200));
+  --color-amber-300: rgb(var(--c-amber-300));
+  --color-amber-400: rgb(var(--c-amber-400));
+  --color-amber-500: rgb(var(--c-amber-500));
+  --color-amber-600: rgb(var(--c-amber-600));
+  --color-amber-700: rgb(var(--c-amber-700));
+  --color-amber-800: rgb(var(--c-amber-800));
+  --color-amber-900: rgb(var(--c-amber-900));
+  --color-amber-950: rgb(var(--c-amber-950));
+
+  --color-green-50: rgb(var(--c-green-50));
+  --color-green-100: rgb(var(--c-green-100));
+  --color-green-200: rgb(var(--c-green-200));
+  --color-green-300: rgb(var(--c-green-300));
+  --color-green-400: rgb(var(--c-green-400));
+  --color-green-500: rgb(var(--c-green-500));
+  --color-green-600: rgb(var(--c-green-600));
+  --color-green-700: rgb(var(--c-green-700));
+  --color-green-800: rgb(var(--c-green-800));
+  --color-green-900: rgb(var(--c-green-900));
+  --color-green-950: rgb(var(--c-green-950));
+
+  --color-red-50: rgb(var(--c-red-50));
+  --color-red-100: rgb(var(--c-red-100));
+  --color-red-200: rgb(var(--c-red-200));
+  --color-red-300: rgb(var(--c-red-300));
+  --color-red-400: rgb(var(--c-red-400));
+  --color-red-500: rgb(var(--c-red-500));
+  --color-red-600: rgb(var(--c-red-600));
+  --color-red-700: rgb(var(--c-red-700));
+  --color-red-800: rgb(var(--c-red-800));
+  --color-red-900: rgb(var(--c-red-900));
+  --color-red-950: rgb(var(--c-red-950));
+
+  --color-blue-50: rgb(var(--c-blue-50));
+  --color-blue-100: rgb(var(--c-blue-100));
+  --color-blue-200: rgb(var(--c-blue-200));
+  --color-blue-300: rgb(var(--c-blue-300));
+  --color-blue-400: rgb(var(--c-blue-400));
+  --color-blue-500: rgb(var(--c-blue-500));
+  --color-blue-600: rgb(var(--c-blue-600));
+  --color-blue-700: rgb(var(--c-blue-700));
+  --color-blue-800: rgb(var(--c-blue-800));
+  --color-blue-900: rgb(var(--c-blue-900));
+  --color-blue-950: rgb(var(--c-blue-950));
+
+  --color-indigo-50: rgb(var(--c-indigo-50));
+  --color-indigo-100: rgb(var(--c-indigo-100));
+  --color-indigo-200: rgb(var(--c-indigo-200));
+  --color-indigo-300: rgb(var(--c-indigo-300));
+  --color-indigo-400: rgb(var(--c-indigo-400));
+  --color-indigo-500: rgb(var(--c-indigo-500));
+  --color-indigo-600: rgb(var(--c-indigo-600));
+  --color-indigo-700: rgb(var(--c-indigo-700));
+  --color-indigo-800: rgb(var(--c-indigo-800));
+  --color-indigo-900: rgb(var(--c-indigo-900));
+  --color-indigo-950: rgb(var(--c-indigo-950));
+
+  --color-purple-50: rgb(var(--c-purple-50));
+  --color-purple-100: rgb(var(--c-purple-100));
+  --color-purple-200: rgb(var(--c-purple-200));
+  --color-purple-300: rgb(var(--c-purple-300));
+  --color-purple-400: rgb(var(--c-purple-400));
+  --color-purple-500: rgb(var(--c-purple-500));
+  --color-purple-600: rgb(var(--c-purple-600));
+  --color-purple-700: rgb(var(--c-purple-700));
+  --color-purple-800: rgb(var(--c-purple-800));
+  --color-purple-900: rgb(var(--c-purple-900));
+  --color-purple-950: rgb(var(--c-purple-950));
+
+  --color-orange-50: rgb(var(--c-orange-50));
+  --color-orange-100: rgb(var(--c-orange-100));
+  --color-orange-200: rgb(var(--c-orange-200));
+  --color-orange-300: rgb(var(--c-orange-300));
+  --color-orange-400: rgb(var(--c-orange-400));
+  --color-orange-500: rgb(var(--c-orange-500));
+  --color-orange-600: rgb(var(--c-orange-600));
+  --color-orange-700: rgb(var(--c-orange-700));
+  --color-orange-800: rgb(var(--c-orange-800));
+  --color-orange-900: rgb(var(--c-orange-900));
+  --color-orange-950: rgb(var(--c-orange-950));
+
+  --color-brand-50: rgb(var(--c-brand-50));
+  --color-brand-100: rgb(var(--c-brand-100));
+  --color-brand-200: rgb(var(--c-brand-200));
+  --color-brand-300: rgb(var(--c-brand-300));
+  --color-brand-400: rgb(var(--c-brand-400));
+  --color-brand-500: rgb(var(--c-brand-500));
+  --color-brand-600: rgb(var(--c-brand-600));
+  --color-brand-700: rgb(var(--c-brand-700));
+  --color-brand-800: rgb(var(--c-brand-800));
+  --color-brand-900: rgb(var(--c-brand-900));
+  --color-brand-950: rgb(var(--c-brand-950));
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
+
+@utility input {
+  @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base sm:py-2 sm:text-sm focus:border-brand-500 focus:outline-hidden focus:ring-2 focus:ring-brand-500/30 disabled:bg-slate-100;
+}
+
+@utility label {
+  @apply mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-600;
+}
+
+@utility card {
+  @apply rounded-xl border border-slate-200 bg-white shadow-xs;
+}
+
+@utility th {
+  @apply px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500;
+}
+
+@utility td {
+  @apply px-3 py-2.5 text-sm;
+}
+
+@media print {
+  body * { visibility: hidden; }
+  .print-area, .print-area * { visibility: visible; }
+  .print-area { position: absolute; left: 0; top: 0; width: 100%; padding: 8mm; background: #fff; }
+  .no-print { display: none !important; }
+}
+
+/* ---------- Tema escuro (só na tela; a impressão é sempre clara) ---------- */
+:root.dark { color-scheme: dark; }
+@media screen {
+  :root.dark .bg-white, :root.dark .card, :root.dark .input { background-color: rgb(var(--c-slate-100)); }   /* cartões e campos: um pouco mais claros que o fundo */
+  :root.dark .bg-slate-900\/50 { background-color: rgb(2 6 23 / 0.7); } /* fundo escurecido atrás das janelas */
+  :root.dark .shadow-xs, :root.dark .shadow-sm, :root.dark .shadow-lg, :root.dark .shadow-xl { --tw-shadow-color: rgb(0 0 0 / 0.5); }
+  :root.dark .recharts-cartesian-grid line { stroke: rgb(var(--c-slate-200)); }
+  :root.dark .recharts-text, :root.dark .recharts-legend-item-text { fill: rgb(var(--c-slate-500)); }
+  :root.dark .recharts-default-tooltip { background-color: rgb(var(--c-slate-100)) !important; border-color: rgb(var(--c-slate-300)) !important; }
+  :root.dark .recharts-tooltip-label { color: rgb(var(--c-slate-900)); }
+}
+
+/* Celular: altura da barra de baixo (some no computador). Telas com botão preso embaixo usam isso para ficar acima dela. */
+:root { --nav-h: calc(4rem + env(safe-area-inset-bottom)); }
+@media (min-width: 1024px) { :root { --nav-h: 0px; } }
+html { -webkit-tap-highlight-color: transparent; }
+@media (max-width: 639px) {
+  /* dedo: nenhum botão menor que 40px de altura */
+  button, [role="button"], a.inline-flex { min-height: 2.5rem; min-width: 2.5rem; }
+  button[aria-label]:not(:has(> span)) > svg:only-child { margin-inline: auto; }
+}

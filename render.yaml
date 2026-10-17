@@ -1,0 +1,24 @@
+# Configuração para o Render (plano grátis). No Render: New → Blueprint → escolha este repositório.
+# O banco fica guardado no Neon (variável DATABASE_URL), porque o disco do Render grátis é apagado ao reiniciar.
+services:
+  - type: web
+    name: marmitaria-gisa
+    runtime: node
+    plan: free
+    region: ohio            # mesma região do banco no Neon (AWS US East 2 - Ohio)
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: cd server && node --import tsx src/index.ts
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 22.22.0
+      - key: NODE_ENV
+        value: production
+      - key: TRUST_PROXY
+        value: "1"
+      - key: DATA_DIR
+        value: /tmp/marmitaria
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL     # cole aqui o endereço do Neon (começa com postgresql://)
+        sync: false

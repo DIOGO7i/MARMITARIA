@@ -1,0 +1,22 @@
+{
+  "name": "marmitaria",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "server",
+    "web"
+  ],
+  "scripts": {
+    "dev:server": "npm run dev -w server",
+    "dev:web": "npm run dev -w web",
+    "build": "npm run build -w web",
+    "start": "npm run start -w server",
+    "test": "npm run test -w server",
+    "create-user": "npm run create-user -w server --",
+    "typecheck": "npm run typecheck -w server && npx -w web tsc --noEmit",
+    "nova-senha": "npm run nova-senha -w server --"
+  },
+  "engines": {
+    "node": ">=22.13"
+  }
+}
