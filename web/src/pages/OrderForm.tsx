@@ -11,13 +11,15 @@ import { checkPhone, maskPhone } from '../lib/phone';
 import { flushBluetoothQuiet } from '../lib/btprint';
 import { QuickNotes } from '../components/QuickNotes';
 import { stripSwaps } from '../lib/notes';
-import type { MenuPart } from '../lib/whatsapp';
+import { ruleText, type DayItems, type MenuPart } from '../lib/whatsapp';
+import { ChoicePicker, type Choices } from '../components/ChoicePicker';
 
 type Lookup = 'vazio' | 'incompleto' | 'invalido' | 'buscando' | 'encontrado' | 'novo' | 'erro';
 type AddrChoice = 'novo' | 'pedido' | number;
 
-interface MenuOpt { name: string; description: string; sizes: string[]; soldOut?: boolean; parts?: MenuPart[] }
-interface Item { option: string; size: string; qty: string; price: string; notes: string }
+interface MenuOpt { name: string; description: string; sizes: string[]; soldOut?: boolean; parts?: MenuPart[]; carnes?: number; guarnicoes?: number }
+interface Item { option: string; size: string; qty: string; price: string; notes: string; choices: Choices }
+const noChoices = (): Choices => ({ carnes: [], guarnicoes: [] });
 
 export default function OrderForm({ order, initialPhone, onClose, onSaved }: { order?: any; initialPhone?: string; onClose: () => void; onSaved: (o: any) => void }) {
   const { settings, user } = useApp();
@@ -25,7 +27,11 @@ export default function OrderForm({ order, initialPhone, onClose, onSaved }: { o
   const sizes = settings!.sizes;
   const priceOf = (size: string) => sizes.find((s) => s.name === size)?.priceCents ?? 0;
   // Opções do cardápio do dia (botões Opção 1 / Opção 2): cada uma pode limitar os tamanhos e pode estar esgotada
-  const [dayMenu, setDayMenu] = useState<{ saved: boolean; options: MenuOpt[] } | null>(null);
+  const [dayMenu, setDayMenu] = useState<{ saved: boolean; options: MenuOpt[]; items?: DayItems } | null>(null);
+  // cardápio montado por botões (carnes e guarnições do dia): a atendente escolhe cada uma no pedido
+  const dayItems: DayItems = dayMenu?.items ?? { carnes: [], guarnicoes: [] };
+  const byItems = !!dayMenu?.saved && (dayItems.carnes.length > 0 || dayItems.guarnicoes.length > 0);
+  const base = settings!.marmitaBase ?? 'Arroz e feijão';
   const menuOpts: MenuOpt[] = (dayMenu?.options ?? (settings!.menuOptions ?? []).map((o) => ({ ...o, soldOut: false }))).filter((o) => o.name.trim());
   const originalOptions = new Set<string>((order?.items ?? []).map((i: any) => i.option).filter(Boolean));
   const sizesFor = (option: string) => {
@@ -35,7 +41,7 @@ export default function OrderForm({ order, initialPhone, onClose, onSaved }: { o
   };
   function newItem(): Item {
     const base = menuOpts.length ? sizesFor(menuOpts[0].name)[0] : (sizes[1] ?? sizes[0]);
-    return { option: '', size: base.name, qty: '1', price: centsToInput(base.priceCents), notes: '' };
+    return { option: '', size: base.name, qty: '1', price: centsToInput(base.priceCents), notes: '', choices: noChoices() };
   }
   const pickOption = (i: number, option: string) => { setError(null); doPick(i, option); };
   const doPick = (i: number, option: string) => setItems((l) => l.map((x, j) => {
@@ -43,8 +49,11 @@ export default function OrderForm({ order, initialPhone, onClose, onSaved }: { o
     const allowed = sizesFor(option);
     // trocou de opção: as trocas da opção anterior não valem mais (o resto da observação fica)
     const notes = x.option && x.option !== option ? stripSwaps(x.notes, menuOpts.find((o) => o.name === x.option)?.parts ?? []) : x.notes;
-    if (allowed.some((s) => s.name === x.size)) return { ...x, option, notes };
-    return { ...x, option, notes, size: allowed[0].name, price: centsToInput(allowed[0].priceCents) };
+    // a nova opção pode levar menos guarnições: corta o que passar do limite
+    const o = menuOpts.find((m) => m.name === option);
+    const choices = { carnes: x.choices.carnes.slice(0, o?.carnes ?? 1), guarnicoes: x.choices.guarnicoes.slice(0, o?.guarnicoes ?? 1) };
+    if (allowed.some((s) => s.name === x.size)) return { ...x, option, notes, choices };
+    return { ...x, option, notes, choices, size: allowed[0].name, price: centsToInput(allowed[0].priceCents) };
   }));
   const n = nowLocal(settings!.timezone);
   const key = useRef(crypto.randomUUID());
@@ -72,7 +81,7 @@ export default function OrderForm({ order, initialPhone, onClose, onSaved }: { o
   }));
   const [items, setItems] = useState<Item[]>(() =>
     order?.items?.length
-      ? order.items.map((i: any) => ({ option: i.option ?? '', size: i.size, qty: String(i.qty), price: centsToInput(i.unitPriceCents), notes: i.notes ?? '' }))
+      ? order.items.map((i: any) => ({ option: i.option ?? '', size: i.size, qty: String(i.qty), price: centsToInput(i.unitPriceCents), notes: i.notes ?? '', choices: i.choices ?? noChoices() }))
       : [newItem()],
   );
   const set = (k: keyof typeof f, v: string) => setF((p) => ({ ...p, [k]: v }));
@@ -242,7 +251,8 @@ export default function OrderForm({ order, initialPhone, onClose, onSaved }: { o
       saveCustomer: lookup === 'novo' && saveCustomer,
       saveAddress: f.deliveryType === 'entrega' && customerMode && addrChoice === 'novo' && saveAddr && (lookup === 'encontrado' || saveCustomer)
         ? { label: newAddr.label.trim() || 'Casa', street: newAddr.street, complement: newAddr.complement || null, neighborhood: newAddr.neighborhood.trim() || null, reference: newAddr.reference || null } : null,
-      items: items.map((it) => ({ option: it.option || null, size: it.size, qty: Number(it.qty), unitPriceCents: parseCents(it.price)!, notes: it.notes })),
+      items: items.map((it) => ({ option: it.option || null, size: it.size, qty: Number(it.qty), unitPriceCents: parseCents(it.price)!, notes: it.notes,
+        choices: it.option && (byItems || it.choices.carnes.length || it.choices.guarnicoes.length) ? it.choices : null })),
       deliveryFeeCents: calc.fee, deliveryCostCents: calc.cost, discountCents: calc.disc,
       paymentMethod: f.paymentMethod || null, paymentStatus: order ? order.paymentStatus : f.paymentStatus, paidCents,
       expectedAt: f.expectedAt || null, notes: f.notes,
@@ -370,7 +380,7 @@ export default function OrderForm({ order, initialPhone, onClose, onSaved }: { o
                       <button key={o.name} type="button" role="radio" aria-checked={on} disabled={off} onClick={() => pickOption(i, o.name)}
                         className={`rounded-lg border-2 px-3 py-2 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${on ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-slate-300 hover:bg-slate-50'}`}>
                         <span className="block text-base font-bold">{on ? '✔ ' : ''}{o.name}{o.soldOut && <span className="ml-2 rounded-sm bg-red-100 px-1.5 py-0.5 text-xs font-semibold text-red-700">Esgotou</span>}</span>
-                        {o.description && <span className="line-clamp-2 block text-xs text-slate-600">{o.description}</span>}
+                        {(byItems ? ruleText(o, base) : o.description) && <span className="line-clamp-2 block text-xs text-slate-600">{byItems ? ruleText(o, base) : o.description}</span>}
                       </button>
                     );
                   })}
@@ -393,8 +403,11 @@ export default function OrderForm({ order, initialPhone, onClose, onSaved }: { o
                   <button type="button" aria-label="Mais uma" onClick={() => setItem(i, { qty: String(q + 1) })} className="h-10 w-10 text-xl font-bold text-slate-700">+</button>
                 </div>
               </div>
-              <QuickNotes index={i} value={it.notes} onChange={(v) => setItem(i, { notes: v })}
-                parts={menuOpts.find((o) => o.name === it.option)?.parts ?? []} quick={settings!.quickNotes ?? []} />
+              {byItems && it.option && (() => {
+                const o = menuOpts.find((m) => m.name === it.option);
+                return <div className="mt-2"><ChoicePicker index={i} carnes={o?.carnes ?? 1} guarnicoes={o?.guarnicoes ?? 1} day={dayItems} value={it.choices} onChange={(c) => setItem(i, { choices: c })} /></div>;
+              })()}
+              <QuickNotes index={i} value={it.notes} onChange={(v) => setItem(i, { notes: v })} parts={[]} quick={settings!.quickNotes ?? []} />
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <input aria-label={`Observação da marmita ${i + 1}`} className="input min-w-0 flex-1 basis-full py-1.5! text-sm sm:basis-auto" placeholder="Observação: sem salada, trocar o arroz…" value={it.notes} onChange={(e) => setItem(i, { notes: e.target.value })} />
                 {priceEdit.has(i) ? (

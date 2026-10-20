@@ -2,7 +2,7 @@ import { audit } from '../db';
 import { calcOrderTotals, isLate, paymentStatus, ValidationError } from '../money';
 import { syncOrderStock } from './recipes';
 import { resolveOrderCustomer } from './customers';
-import { resolveItemOptions } from './menu';
+import { resolveItemOptions, ResolvedItem } from './menu';
 import { enqueuePrint } from './kitchen';
 import { Ctx, NotFoundError, ForbiddenError, nextNumber, now, optDateTime, paidOn, paidSum, recordPayment, reqDate, reverseAllPayments } from './common';
 
@@ -25,7 +25,7 @@ export interface OrderInput {
   customerAddressId?: number | null;
   saveCustomer?: boolean;                 // telefone novo: cadastra o cliente junto com o pedido
   saveAddress?: { label: string } | null; // endereço digitado: salva no cadastro do cliente
-  items: { size: string; qty: number; unitPriceCents: number; notes?: string | null; option?: string | null }[];
+  items: { size: string; qty: number; unitPriceCents: number; notes?: string | null; option?: string | null; choices?: { carnes?: string[]; guarnicoes?: string[] } | null }[];
   deliveryFeeCents: number;
   deliveryCostCents: number;
   discountCents: number;
@@ -39,7 +39,8 @@ export interface OrderInput {
 }
 
 function mapOrder(db: Ctx['db'], o: any) {
-  const items = db.prepare('SELECT id, menu_option AS option, menu_description AS optionDescription, size, qty, unit_price_cents AS unitPriceCents, total_cents AS totalCents, notes FROM order_items WHERE order_id = ? ORDER BY id').all(o.id);
+  const items = (db.prepare('SELECT id, menu_option AS option, menu_description AS optionDescription, size, qty, unit_price_cents AS unitPriceCents, total_cents AS totalCents, notes, choices FROM order_items WHERE order_id = ? ORDER BY id').all(o.id) as any[])
+    .map((i) => ({ ...i, choices: i.choices ? JSON.parse(i.choices) : null }));
   const n = now(db).dateTime;
   return {
     id: o.id, number: o.number, orderDate: o.order_date, orderTime: o.order_time, source: o.source,
@@ -67,9 +68,10 @@ function validate(input: OrderInput) {
   return { expectedAt, deliveredAt, totals };
 }
 
-function insertItems(db: Ctx['db'], orderId: number, lines: any[], descriptions: (string | null)[]) {
-  const ins = db.prepare('INSERT INTO order_items(order_id, menu_option, menu_description, size, qty, unit_price_cents, total_cents, notes) VALUES (?,?,?,?,?,?,?,?)');
-  lines.forEach((l, i) => ins.run(orderId, l.option?.trim().slice(0, 40) || null, descriptions[i] ?? null, l.size, l.qty, l.unitPriceCents, l.totalCents, l.notes?.trim() || null));
+function insertItems(db: Ctx['db'], orderId: number, lines: any[], resolved: ResolvedItem[]) {
+  const ins = db.prepare('INSERT INTO order_items(order_id, menu_option, menu_description, size, qty, unit_price_cents, total_cents, notes, choices) VALUES (?,?,?,?,?,?,?,?,?)');
+  lines.forEach((l, i) => ins.run(orderId, l.option?.trim().slice(0, 40) || null, resolved[i]?.description ?? null, l.size, l.qty, l.unitPriceCents, l.totalCents, l.notes?.trim() || null,
+    resolved[i]?.choices ? JSON.stringify(resolved[i].choices) : null));
 }
 
 /** Resolve cliente/endereço e substitui no input os dados que o pedido deve guardar (cópia no momento da compra). */
@@ -145,7 +147,9 @@ export function updateOrder(ctx: Ctx, id: number, input: OrderInput) {
     const cust = applyCustomer(ctx, input, cur.customer_phone);
     const { expectedAt, deliveredAt, totals } = validate(input);
     // opções que o pedido já tinha continuam valendo (mesmo se esgotaram depois), com a descrição da época
-    const keep = new Map((db.prepare('SELECT menu_option, menu_description FROM order_items WHERE order_id = ? AND menu_option IS NOT NULL').all(id) as any[]).map((r) => [r.menu_option, r.menu_description]));
+    const had = db.prepare('SELECT menu_option, menu_description, choices FROM order_items WHERE order_id = ? AND menu_option IS NOT NULL').all(id) as any[];
+    const names = new Set<string>(had.flatMap((r) => { const c = r.choices ? JSON.parse(r.choices) : null; return c ? [...c.carnes, ...c.guarnicoes].map((x: string) => x.toLowerCase()) : []; }));
+    const keep = { options: new Map(had.map((r) => [r.menu_option, r.menu_description])), names };
     const descriptions = resolveItemOptions(ctx, input.orderDate, input.items, keep);
     const paid = paidSum(db, 'pedido', id);
     if (paid > totals.totalCents) throw new ValidationError('O novo total é menor que o valor já recebido. Estorne parte do recebimento antes de reduzir o pedido.');

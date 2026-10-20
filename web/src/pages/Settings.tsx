@@ -66,7 +66,7 @@ export default function SettingsPage() {
     if (new Set(deliveryTiers.map((t) => t.upToMeters)).size !== deliveryTiers.length) throw new Error('Há duas faixas com a mesma distância.');
     const dd = Number(dueDays);
     if (!Number.isInteger(dd) || dd < 0 || dd > 60) throw new Error('Dias de aviso de contas deve ser entre 0 e 60.');
-    const menuOptions = opts.map((o) => ({ name: o.name.trim(), description: o.description.trim(), sizes: o.sizes.filter((x) => sizes.some((z) => z.name === x)) }));
+    const menuOptions = opts.map((o) => ({ name: o.name.trim(), description: o.description.trim(), sizes: o.sizes.filter((x) => sizes.some((z) => z.name === x)), carnes: o.carnes ?? 1, guarnicoes: o.guarnicoes ?? 1 }));
     if (menuOptions.some((o) => !o.name)) throw new Error('Toda opção do cardápio precisa de um nome.');
     const { timezone: _tz, ...rest } = s;
     await api('PUT', '/settings', { ...rest, sizes, defaultMinStockMilli: ms, deliveryTiers, dueAlertDays: dd, menuOptions });
@@ -117,13 +117,22 @@ export default function SettingsPage() {
 
         <section className="card p-4">
           <h2 className="mb-1 font-bold">Modelo do cardápio</h2>
-          <p className="mb-3 text-sm text-slate-500">Ponto de partida do <strong>Cardápio do dia</strong>: os nomes dos botões e os tamanhos de cada opção. O prato de cada dia você escreve na tela “Cardápio do dia”.</p>
+          <p className="mb-3 text-sm text-slate-500">Ponto de partida do <strong>Cardápio do dia</strong>: os botões, os tamanhos e quantas carnes e guarnições cada opção leva. As carnes e guarnições de cada dia você coloca na tela “Cardápio do dia”.</p>
+          <Field label="Vem em toda marmita (sem escolher)" className="mb-3"><input aria-label="Vem em toda marmita" className="input" maxLength={60} value={s.marmitaBase ?? ''} onChange={(e) => setS({ ...s, marmitaBase: e.target.value })} placeholder="Arroz e feijão" /></Field>
           <div className="space-y-3">
             {opts.map((o, i) => (
               <div key={i} className="rounded-lg border border-slate-200 p-3">
                 <div className="grid gap-2 sm:grid-cols-[12rem_1fr_auto]">
                   <input aria-label="Nome da opção" className="input" value={o.name} onChange={(e) => setOpts(opts.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))} placeholder="Opção 1" />
-                  <input aria-label="Prato do dia" className="input" value={o.description} onChange={(e) => setOpts(opts.map((x, j) => (j === i ? { ...x, description: e.target.value } : x)))} placeholder="Descrição padrão (opcional)" />
+                  <div className="flex flex-wrap items-center gap-3 text-sm">
+                    {(['carnes', 'guarnicoes'] as const).map((k) => (
+                      <label key={k} className="flex items-center gap-1.5">{k === 'carnes' ? 'Carnes' : 'Guarnições'}
+                        <select aria-label={`${k === 'carnes' ? 'Carnes' : 'Guarnições'} da ${o.name}`} className="input w-16! py-1!" value={o[k] ?? 1} onChange={(e) => setOpts(opts.map((x, j) => (j === i ? { ...x, [k]: Number(e.target.value) } : x)))}>
+                          {Array.from({ length: k === 'carnes' ? 4 : 5 }, (_, n) => <option key={n} value={n}>{n}</option>)}
+                        </select>
+                      </label>
+                    ))}
+                  </div>
                   <Button variant="ghost" aria-label="Remover opção" onClick={() => setOpts(opts.filter((_, j) => j !== i))}><Trash2 className="h-4 w-4" /></Button>
                 </div>
                 <div className="mt-2 flex flex-wrap gap-3 text-sm">
@@ -137,7 +146,7 @@ export default function SettingsPage() {
                 </div>
               </div>
             ))}
-            {opts.length < 8 && <Button variant="secondary" onClick={() => setOpts([...opts, { name: `Opção ${opts.length + 1}`, description: '', sizes: [] }])}><Plus className="h-4 w-4" />Adicionar opção</Button>}
+            {opts.length < 8 && <Button variant="secondary" onClick={() => setOpts([...opts, { name: `Opção ${opts.length + 1}`, description: '', sizes: [], carnes: 1, guarnicoes: 1 }])}><Plus className="h-4 w-4" />Adicionar opção</Button>}
             {opts.length === 0 && <p className="text-xs text-slate-500">Sem opções: o pedido mostra só os tamanhos, sem os botões.</p>}
           </div>
         </section>

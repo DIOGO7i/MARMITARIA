@@ -2,6 +2,7 @@
 // só o que a cozinheira precisa: número, retirada/entrega, marmitas, observações e o que cobrar.
 import { money } from './format';
 import type { Settings } from './context';
+import { choiceLines } from './choices';
 
 export type TicketKind = 'novo' | 'alterado' | 'cancelado' | 'reaberto' | 'reimpressao' | 'teste';
 
@@ -41,7 +42,7 @@ export function ticketBody(o: any, kindIn: TicketKind, settings: Settings) {
   ${(o.items ?? []).map((i: any) => `
   <div class="item">
     <div class="line"><span class="q">${esc(i.qty)}×</span> ${esc(i.size)}${i.option ? ` <span class="opt">${esc(i.option)}</span>` : ''}</div>
-    ${i.optionDescription ? `<div class="desc">${esc(i.optionDescription)}</div>` : ''}
+    ${choiceLines(i.choices).length ? choiceLines(i.choices).map((l) => `<div class="choice">${esc(l)}</div>`).join('') : i.optionDescription ? `<div class="desc">${esc(i.optionDescription)}</div>` : ''}
     ${i.notes ? String(i.notes).split(/\s*;\s*/).filter(Boolean).map((n: string) => `<div class="note">» ${esc(n)}</div>`).join('') : ''}
   </div>`).join('')}
   <div class="count">${totalMarmitas} marmita${totalMarmitas === 1 ? '' : 's'}</div>
@@ -76,6 +77,7 @@ hr { border: 0; border-top: 1.5px dashed #000; margin: 2.5mm 0; }
 .q { font-size: ${19 * k}pt; }
 .opt { border: 1.5px solid #000; padding: 0 1mm; font-size: ${13 * k}pt; white-space: nowrap; }
 .desc { font-size: ${11 * k}pt; margin-top: .5mm; }
+.choice { font-weight: 800; font-size: ${13 * k}pt; margin-top: .5mm; }
 .note { font-weight: 900; font-size: ${14 * k}pt; text-transform: uppercase; margin-top: .8mm; }
 .count { text-align: right; font-size: ${11 * k}pt; font-weight: 700; }
 .addr { font-size: ${12 * k}pt; font-weight: 700; }

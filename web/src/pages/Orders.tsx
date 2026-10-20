@@ -1,3 +1,4 @@
+import { choiceLines } from '../lib/choices';
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import DistanceBadge from '../components/DistanceBadge';
@@ -220,7 +221,7 @@ function OrderDetail({ id, onClose, onChanged, onEdit }: { id: number; onClose: 
       <table className="mt-4 w-full text-sm">
         <thead className="bg-slate-50"><tr><th className="th">Marmita</th><th className="th">Obs.</th><th className="th text-right">Qtd.</th><th className="th text-right">Unit.</th><th className="th text-right">Total</th></tr></thead>
         <tbody className="divide-y divide-slate-100">{o.items.map((i: any) => (
-          <tr key={i.id}><td className="td">{i.size}{i.option && <div className="text-xs font-semibold text-brand-700">{i.option}</div>}</td><td className="td">{i.notes || '—'}</td><td className="td text-right">{i.qty}</td><td className="td text-right">{money(i.unitPriceCents)}</td><td className="td text-right">{money(i.totalCents)}</td></tr>
+          <tr key={i.id}><td className="td">{i.size}{i.option && <div className="text-xs font-semibold text-brand-700">{i.option}</div>}{choiceLines(i.choices).map((l) => <div key={l} className="text-xs">{l}</div>)}</td><td className="td">{i.notes || '—'}</td><td className="td text-right">{i.qty}</td><td className="td text-right">{money(i.unitPriceCents)}</td><td className="td text-right">{money(i.totalCents)}</td></tr>
         ))}</tbody>
       </table>
       {o.notes && <p className="mt-2 text-sm"><strong>Observações:</strong> {o.notes}</p>}

@@ -34,7 +34,17 @@ export const WA_LABELS: Record<string, string> = {
 };
 
 export interface MenuPart { label: string; value: string; swaps: string[] }
-export interface DayMenuOption { name: string; description: string; sizes: string[]; soldOut?: boolean; parts?: MenuPart[] }
+export interface DayMenuOption { name: string; description: string; sizes: string[]; soldOut?: boolean; parts?: MenuPart[]; carnes?: number; guarnicoes?: number }
+/** Carnes e guarnições do dia (botões no pedido). */
+export interface DayItem { name: string; soldOut: boolean }
+export interface DayItems { carnes: DayItem[]; guarnicoes: DayItem[] }
+export const EMPTY_ITEMS: DayItems = { carnes: [], guarnicoes: [] };
+
+const qtd = (n: number, um: string, varios: string) => `${n} ${n === 1 ? um : varios}`;
+/** "Arroz e feijão + 1 carne + 2 guarnições" */
+export function ruleText(o: Pick<DayMenuOption, 'carnes' | 'guarnicoes'>, base = '') {
+  return [base.trim(), o.carnes ? qtd(o.carnes, 'carne', 'carnes') : '', o.guarnicoes ? qtd(o.guarnicoes, 'guarnição', 'guarnições') : ''].filter(Boolean).join(' + ');
+}
 
 /** "Carne" + [Almôndegas, Omelete] → "Carne: pode trocar por Almôndegas ou Omelete" */
 export function swapLine(p: MenuPart) {

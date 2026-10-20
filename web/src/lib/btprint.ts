@@ -6,6 +6,7 @@ import { api } from './api';
 import { money } from './format';
 import type { Settings } from './context';
 import type { TicketKind } from './ticket';
+import { choiceLines } from './choices';
 
 const KEY = 'marmitaria.impressora';
 export type DeviceMode = 'nenhuma' | 'bluetooth';
@@ -74,7 +75,10 @@ export function ticketEscPos(o: any, kindIn: TicketKind, settings: Settings): st
   for (const i of o.items ?? []) {
     count += Number(i.qty || 0);
     tall(`${i.qty}x ${i.size}${i.option ? ` - ${i.option}` : ''}`);
-    if (i.optionDescription) text(i.optionDescription);
+    // marmita montada por botões: carne e guarnições em letra alta, uma linha cada; senão, a descrição da opção
+    const ch = choiceLines(i.choices);
+    if (ch.length) for (const l of ch) tall(l.toUpperCase());
+    else if (i.optionDescription) text(i.optionDescription);
     // cada troca/observação numa linha: a cozinha lê de longe
     for (const n of String(i.notes ?? '').split(/\s*;\s*/).filter(Boolean)) tall(`>> ${n.toUpperCase()}`);
     L.push('\n');
@@ -135,7 +139,7 @@ export function testBluetooth(settings: Settings) {
   sendToRawBT(ticketEscPos({
     number: 0, orderTime: new Date().toTimeString().slice(0, 5), source: 'presencial', deliveryType: 'entrega', customerName: 'Teste da impressora',
     address: 'Rua das Flores, 123 - ap. 4', neighborhood: 'Centro', customerPhone: '(11) 98888-7777',
-    items: [{ qty: 2, size: '450 g', option: 'Opção 1', optionDescription: 'Arroz, feijão, frango empanado e salada', notes: 'sem cebola' }],
+    items: [{ qty: 2, size: '650 g', option: 'Opção 2', optionDescription: 'Arroz e feijão, Frango empanado, 2x Purê', choices: { carnes: ['Frango empanado'], guarnicoes: ['Purê', 'Purê'] }, notes: 'sem cebola' }],
     totalCents: 3500, paidCents: 0, paymentMethod: 'Pix', notes: 'Acentos: ação, pão, café, maçã',
   }, 'teste', settings));
 }

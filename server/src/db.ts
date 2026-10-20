@@ -24,10 +24,12 @@ export const DEFAULT_SETTINGS = {
     { name: '750 g', priceCents: 1800 },
   ],
   // Opções do cardápio (botões no pedido). Cada opção pode limitar os tamanhos disponíveis.
+  // Cada opção diz quantas carnes e guarnições a atendente escolhe no pedido (além do que vem sempre: marmitaBase).
   menuOptions: [
-    { name: 'Opção 1', description: '', sizes: ['350 g', '450 g'] },
-    { name: 'Opção 2', description: '', sizes: ['650 g', '750 g'] },
-  ] as { name: string; description: string; sizes: string[] }[],
+    { name: 'Opção 1', description: '', sizes: ['350 g', '450 g'], carnes: 1, guarnicoes: 1 },
+    { name: 'Opção 2', description: '', sizes: ['650 g', '750 g'], carnes: 1, guarnicoes: 2 },
+  ] as { name: string; description: string; sizes: string[]; carnes?: number; guarnicoes?: number }[],
+  marmitaBase: 'Arroz e feijão',          // vem em toda marmita, sem escolher
   // Botões de observação rápida em cada marmita do pedido, além das trocas
   // (vazio: no pedido aparecem só as trocas de cada opção do cardápio; a Gisa pode cadastrar se quiser)
   quickNotes: [] as string[],
@@ -92,6 +94,9 @@ function migrate(db: DB) {
   db.exec('CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id)');
   if (!cols('order_items').includes('menu_description')) db.exec('ALTER TABLE order_items ADD COLUMN menu_description TEXT'); // o que tinha na opção naquele dia (cópia)
   if (!cols('order_items').includes('menu_option')) db.exec('ALTER TABLE order_items ADD COLUMN menu_option TEXT'); // Opção 1 / Opção 2 do cardápio
+  // v31: carnes e guarnições do dia (botões) e o que foi escolhido em cada marmita
+  if (!cols('daily_menus').includes('items')) db.exec('ALTER TABLE daily_menus ADD COLUMN items TEXT');
+  if (!cols('order_items').includes('choices')) db.exec('ALTER TABLE order_items ADD COLUMN choices TEXT');
   if (!cols('purchase_items').includes('prev_unit_cost_cents')) db.exec('ALTER TABLE purchase_items ADD COLUMN prev_unit_cost_cents INTEGER'); // custo do produto antes desta compra
   if (!cols('suppliers').includes('cnpj')) db.exec('ALTER TABLE suppliers ADD COLUMN cnpj TEXT');
   if (!cols('purchases').includes('access_key')) db.exec('ALTER TABLE purchases ADD COLUMN access_key TEXT');
@@ -147,6 +152,16 @@ function migrate(db: DB) {
     db.prepare("INSERT INTO settings(key, value) VALUES ('migr_endereco_gisa', 'true')").run();
   }
   db.exec("CREATE UNIQUE INDEX IF NOT EXISTS uq_purchases_access_key ON purchases(access_key) WHERE access_key IS NOT NULL AND status = 'confirmada'");
+  // v31: opções do modelo sem quantidade de carnes/guarnições ganham a regra da Gisa (Opção 2 = 2 guarnições)
+  const mo = db.prepare("SELECT value FROM settings WHERE key = 'menuOptions'").get() as { value: string } | undefined;
+  if (mo) {
+    const l = JSON.parse(mo.value) as any[];
+    if (Array.isArray(l) && l.some((o) => o.carnes === undefined || o.guarnicoes === undefined)) {
+      db.prepare("UPDATE settings SET value = ? WHERE key = 'menuOptions'").run(JSON.stringify(l.map((o) => ({
+        ...o, carnes: o.carnes ?? 1, guarnicoes: o.guarnicoes ?? (/2/.test(String(o.name)) ? 2 : 1),
+      }))));
+    }
+  }
   // v30: a lista padrão de observações rápidas da v29 (mais arroz, sem feijão…) sai; ficam só as trocas.
   // Só limpa se ninguém mexeu na lista.
   const qn = db.prepare("SELECT value FROM settings WHERE key = 'quickNotes'").get() as { value: string } | undefined;

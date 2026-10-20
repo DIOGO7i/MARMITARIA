@@ -61,7 +61,8 @@ const orderSchema = z.object({
   customerAddressId: z.number().int().nullish(),
   saveCustomer: z.boolean().optional(),
   saveAddress: z.object({ label: z.string().max(40), street: optStr, complement: optStr, reference: optStr }).nullish(),
-  items: z.array(z.object({ size: z.string().min(1), qty: z.number().int().min(1), unitPriceCents: cents, notes: optStr, option: z.string().max(40).nullish() })).min(1),
+  items: z.array(z.object({ size: z.string().min(1), qty: z.number().int().min(1), unitPriceCents: cents, notes: optStr, option: z.string().max(40).nullish(),
+    choices: z.object({ carnes: z.array(z.string().max(60)).max(5).default([]), guarnicoes: z.array(z.string().max(60)).max(6).default([]) }).nullish() })).min(1),
   deliveryFeeCents: cents, deliveryCostCents: cents, discountCents: cents,
   paymentMethod: optStr,
   paymentStatus: z.enum(['pendente', 'parcial', 'pago']),
@@ -112,8 +113,10 @@ const settingsSchema = z.object({
   dueAlertDays: z.number().int().min(0).max(60).optional(),
   kitchenPrint: z.object({ enabled: z.boolean(), paper: z.enum(['80', '58']), copies: z.number().int().min(1).max(3), printEdits: z.boolean(), printCancels: z.boolean(), showPrices: z.boolean(), small: z.boolean().optional(), noAccents: z.boolean().optional() }).optional(),
   whatsappTemplates: z.record(z.string(), z.string().max(1000)).optional(),
+  marmitaBase: z.string().trim().max(60).optional(),
   quickNotes: z.array(z.string().trim().min(1).max(40, 'Observação rápida muito longa (máx. 40 letras).')).max(20, 'No máximo 20 observações rápidas.').optional(),
-  menuOptions: z.array(z.object({ name: z.string().trim().min(1, 'Toda opção do cardápio precisa de um nome.').max(40), description: z.string().max(300), sizes: z.array(z.string()) })).max(8).optional()
+  menuOptions: z.array(z.object({ name: z.string().trim().min(1, 'Toda opção do cardápio precisa de um nome.').max(40), description: z.string().max(300), sizes: z.array(z.string()),
+    carnes: z.number().int().min(0).max(3).optional(), guarnicoes: z.number().int().min(0).max(4).optional() })).max(8).optional()
     .refine((l) => !l || new Set(l.map((o) => o.name.trim().toLowerCase())).size === l.length, 'Há opções do cardápio com o mesmo nome.'),
 });
 
@@ -462,11 +465,14 @@ export function createApp(db: DB, jwtSecret: string, opts: { staticDir?: string;
 
   // Cardápio do dia (qualquer pessoa da equipe pode montar e marcar "esgotou")
   const menuOption = z.object({ name: z.string(), description: z.string().max(300).optional().default(''), sizes: z.array(z.string()).optional().default([]), soldOut: z.boolean().optional().default(false),
-    parts: z.array(z.object({ label: z.string().optional().default(''), value: z.string().optional().default(''), swaps: z.array(z.string()).optional().default([]) })).optional() });
+    parts: z.array(z.object({ label: z.string().optional().default(''), value: z.string().optional().default(''), swaps: z.array(z.string()).optional().default([]) })).optional(),
+    carnes: z.number().int().optional(), guarnicoes: z.number().int().optional() });
+  const dayItem = z.union([z.string(), z.object({ name: z.string(), soldOut: z.boolean().optional() })]);
   api.get('/menu/:date', wrap((req) => menu.getMenu(C(req), String(req.params.date))));
   api.put('/menu/:date', wrap((req) => {
-    const b = z.object({ options: z.array(menuOption), swaps: z.array(z.object({ title: z.string(), items: z.array(z.string()) })).optional() }).parse(req.body);
-    return menu.saveMenu(C(req), String(req.params.date), b.options, b.swaps);
+    const b = z.object({ options: z.array(menuOption), swaps: z.array(z.object({ title: z.string(), items: z.array(z.string()) })).optional(),
+      items: z.object({ carnes: z.array(dayItem).optional(), guarnicoes: z.array(dayItem).optional() }).optional() }).parse(req.body);
+    return menu.saveMenu(C(req), String(req.params.date), b.options, b.swaps, b.items);
   }));
   api.post('/menu/:date/sold-out', wrap((req) => {
     const b = z.object({ name: z.string().min(1), soldOut: z.boolean() }).parse(req.body);

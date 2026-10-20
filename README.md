@@ -487,17 +487,19 @@ Para usar só com um celular Android e uma impressora térmica Bluetooth (ex.: *
 
 A partir daí, ao **registrar, alterar, cancelar ou reabrir** um pedido nesse celular, a comanda sai na hora (texto com comandos ESC/POS: número e tipo em letra grande, observações em negrito). Comandas que ficaram na fila (por exemplo, sem internet na hora) saem no próximo pedido ou pelo botão **Imprimir o que estiver esperando**. Se os acentos saírem errados, marque **"tirar os acentos"** nas Configurações. A escolha "Bluetooth" vale só para o aparelho onde foi ligada. Só funciona em Android (o iPhone não permite).
 
-## Cardápio montado por partes e trocas no pedido (versão 30)
+## Cardápio por botões: carnes e guarnições do dia (versão 31)
 
-No **Cardápio**, cada opção é montada por partes (Acompanhamento, Carne, Guarnição, Salada… — dá para renomear,
-tirar e pôr partes). Em cada parte: **o que vai** e **pelo que pode trocar** (separado por vírgula). Cada opção tem as próprias trocas.
-A descrição da opção (WhatsApp, imagem, comanda) é montada sozinha a partir das partes; o WhatsApp mostra
-"↪ Carne: pode trocar por Almôndegas ou Omelete".
+**De manhã**, no **Cardápio do dia**, a Gisa digita as **carnes do dia** e as **guarnições do dia** (pode várias de uma vez,
+separadas por vírgula) e marca "Esgotou" no meio do movimento. **Arroz e feijão** vem em toda marmita (Configurações → "Vem em toda marmita").
 
-No **pedido**, ao tocar na opção, aparecem botões por parte com o original marcado ("Carne: ✓ Frango empanado · Almôndegas · Omelete").
-Tocar numa troca escreve "Trocar frango empanado por Almôndegas" na observação da marmita; só uma troca por parte; tocar no original desfaz;
-mudar de opção tira as trocas da opção anterior. Na comanda, cada troca sai numa linha (">> TROCAR FRANGO EMPANADO POR ALMÔNDEGAS").
-Observações rápidas extras (ex.: "Sem cebola") podem ser cadastradas em Configurações; vêm vazias.
+Cada **opção** diz quanto leva (Configurações → Modelo do cardápio, ou no próprio Cardápio do dia):
+**Opção 1** (350/450 g) = 1 carne + 1 guarnição; **Opção 2** (650/750 g) = 1 carne + 2 guarnições.
+
+**No pedido**, a atendente toca: opção → tamanho → carne → guarnição(ões). Contador "1 de 2 · falta 1".
+Guarnição pode repetir (2x Purê); cheio, tocar numa nova troca a última; tocar numa escolhida tira. Pode salvar com menos (cliente sem guarnição);
+mais que o limite, o servidor recusa. Item esgotado ou fora do cardápio é recusado em pedido novo; na edição, o que o pedido já tinha continua valendo.
+Escolhas ficam em `order_items.choices`; a descrição gravada é "Arroz e feijão, Bisteca, 2x Purê".
+**Comanda**: "CARNE: BISTECA" / "GUARNIÇÕES: 2x PURÊ" em letra alta. WhatsApp e imagem listam as carnes e guarnições do dia.
 
 ## 8. Suposições adotadas
 
