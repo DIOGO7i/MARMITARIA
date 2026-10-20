@@ -487,6 +487,15 @@ Para usar só com um celular Android e uma impressora térmica Bluetooth (ex.: *
 
 A partir daí, ao **registrar, alterar, cancelar ou reabrir** um pedido nesse celular, a comanda sai na hora (texto com comandos ESC/POS: número e tipo em letra grande, observações em negrito). Comandas que ficaram na fila (por exemplo, sem internet na hora) saem no próximo pedido ou pelo botão **Imprimir o que estiver esperando**. Se os acentos saírem errados, marque **"tirar os acentos"** nas Configurações. A escolha "Bluetooth" vale só para o aparelho onde foi ligada. Só funciona em Android (o iPhone não permite).
 
+## Trocas e observações rápidas no pedido (versão 29)
+
+Embaixo de cada marmita do pedido aparecem botões:
+- **Trocas do dia**, montadas no **Cardápio** (ex.: "Para trocar a carne": Almôndegas, Coxa assada). Tocar escreve
+  "Trocar a carne por Almôndegas"; escolher outra carne do mesmo grupo substitui a anterior; tocar de novo apaga.
+- **Observações rápidas** ("Sem salada", "Molho à parte"...), editáveis em **Configurações**.
+
+Tudo vai para a observação da marmita (que continua editável à mão) e sai na comanda da cozinha.
+
 ## 8. Suposições adotadas
 
 - Um único estabelecimento, fuso **America/Sao_Paulo**, moeda real (R$).

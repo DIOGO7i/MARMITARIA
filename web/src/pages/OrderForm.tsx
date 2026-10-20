@@ -9,6 +9,7 @@ import AddressFields, { AddressDraft, addressLine, emptyAddress } from '../compo
 import DistanceBadge, { DistanceView, kmText, tierFor, useDistance } from '../components/DistanceBadge';
 import { checkPhone, maskPhone } from '../lib/phone';
 import { flushBluetoothQuiet } from '../lib/btprint';
+import { QuickNotes, SwapGroup } from '../components/QuickNotes';
 
 type Lookup = 'vazio' | 'incompleto' | 'invalido' | 'buscando' | 'encontrado' | 'novo' | 'erro';
 type AddrChoice = 'novo' | 'pedido' | number;
@@ -22,7 +23,7 @@ export default function OrderForm({ order, initialPhone, onClose, onSaved }: { o
   const sizes = settings!.sizes;
   const priceOf = (size: string) => sizes.find((s) => s.name === size)?.priceCents ?? 0;
   // Opções do cardápio do dia (botões Opção 1 / Opção 2): cada uma pode limitar os tamanhos e pode estar esgotada
-  const [dayMenu, setDayMenu] = useState<{ saved: boolean; options: MenuOpt[] } | null>(null);
+  const [dayMenu, setDayMenu] = useState<{ saved: boolean; options: MenuOpt[]; swaps?: SwapGroup[] } | null>(null);
   const menuOpts: MenuOpt[] = (dayMenu?.options ?? (settings!.menuOptions ?? []).map((o) => ({ ...o, soldOut: false }))).filter((o) => o.name.trim());
   const originalOptions = new Set<string>((order?.items ?? []).map((i: any) => i.option).filter(Boolean));
   const sizesFor = (option: string) => {
@@ -389,7 +390,7 @@ export default function OrderForm({ order, initialPhone, onClose, onSaved }: { o
                 </div>
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                <input aria-label={`Observação da marmita ${i + 1}`} className="input min-w-0 flex-1 py-1.5! text-sm" placeholder="Observação: sem salada, trocar o arroz…" value={it.notes} onChange={(e) => setItem(i, { notes: e.target.value })} />
+                <input aria-label={`Observação da marmita ${i + 1}`} className="input min-w-0 flex-1 basis-full py-1.5! text-sm sm:basis-auto" placeholder="Observação: sem salada, trocar o arroz…" value={it.notes} onChange={(e) => setItem(i, { notes: e.target.value })} />
                 {priceEdit.has(i) ? (
                   <label className="flex items-center gap-1 text-sm">R$<input aria-label={`Preço da marmita ${i + 1}`} autoFocus className="input w-24! py-1.5! text-right" inputMode="decimal" value={it.price} onChange={(e) => setItem(i, { price: e.target.value })} /></label>
                 ) : (
@@ -397,6 +398,8 @@ export default function OrderForm({ order, initialPhone, onClose, onSaved }: { o
                 )}
                 <span className="w-20 text-right text-sm font-semibold">{money(q * (parseCents(it.price) ?? 0))}</span>
               </div>
+              <QuickNotes index={i} value={it.notes} onChange={(v) => setItem(i, { notes: v })}
+                swaps={dayMenu?.saved ? (dayMenu.swaps ?? []) : []} quick={settings!.quickNotes ?? []} />
             </div>
           );
         })}

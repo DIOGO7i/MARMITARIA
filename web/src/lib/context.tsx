@@ -18,6 +18,7 @@ export interface Settings {
   dueAlertDays: number;
   whatsappTemplates: Record<string, string>;
   menuOptions: { name: string; description: string; sizes: string[] }[];
+  quickNotes?: string[];
   /** Módulos extras ligados por quem instalou (MODULOS_EXTRAS no .env) */
   modules: { fichas: boolean; estoqueCompleto: boolean };
 }

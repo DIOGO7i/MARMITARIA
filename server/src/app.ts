@@ -112,6 +112,7 @@ const settingsSchema = z.object({
   dueAlertDays: z.number().int().min(0).max(60).optional(),
   kitchenPrint: z.object({ enabled: z.boolean(), paper: z.enum(['80', '58']), copies: z.number().int().min(1).max(3), printEdits: z.boolean(), printCancels: z.boolean(), showPrices: z.boolean(), small: z.boolean().optional(), noAccents: z.boolean().optional() }).optional(),
   whatsappTemplates: z.record(z.string(), z.string().max(1000)).optional(),
+  quickNotes: z.array(z.string().trim().min(1).max(40, 'Observação rápida muito longa (máx. 40 letras).')).max(20, 'No máximo 20 observações rápidas.').optional(),
   menuOptions: z.array(z.object({ name: z.string().trim().min(1, 'Toda opção do cardápio precisa de um nome.').max(40), description: z.string().max(300), sizes: z.array(z.string()) })).max(8).optional()
     .refine((l) => !l || new Set(l.map((o) => o.name.trim().toLowerCase())).size === l.length, 'Há opções do cardápio com o mesmo nome.'),
 });

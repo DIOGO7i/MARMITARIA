@@ -112,6 +112,7 @@ export default function SettingsPage() {
           <ListEditor label="Categorias de despesas" items={s.expenseCategories} onChange={(l) => setS({ ...s, expenseCategories: l })} />
           {settings!.modules.estoqueCompleto && <ListEditor label="Categorias de produtos" items={s.productCategories} onChange={(l) => setS({ ...s, productCategories: l })} />}
           <ListEditor label="Unidades de medida" items={s.units} onChange={(l) => setS({ ...s, units: l })} />
+          <ListEditor label="Observações rápidas do pedido (botões em cada marmita)" items={s.quickNotes ?? []} onChange={(l) => setS({ ...s, quickNotes: l })} />
         </div>
 
         <section className="card p-4">

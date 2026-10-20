@@ -28,6 +28,8 @@ export const DEFAULT_SETTINGS = {
     { name: 'Opção 1', description: '', sizes: ['350 g', '450 g'] },
     { name: 'Opção 2', description: '', sizes: ['650 g', '750 g'] },
   ] as { name: string; description: string; sizes: string[] }[],
+  // Botões de observação rápida em cada marmita do pedido (a atendente toca em vez de digitar)
+  quickNotes: ['Sem salada', 'Sem cebola', 'Sem feijão', 'Pouco arroz', 'Mais arroz', 'Molho à parte'],
   expenseCategories: ['Água', 'Energia elétrica', 'Gás', 'Aluguel', 'Internet', 'Manutenção', 'Taxas', 'Pagamento a entregadores', 'Outras despesas'],
   productCategories: ['Grãos', 'Carnes', 'Hortifruti', 'Embalagens', 'Bebidas', 'Temperos', 'Outros'],
   units: ['unidade', 'kg', 'g', 'litro', 'ml', 'pacote', 'caixa'],
