@@ -9,12 +9,14 @@ import AddressFields, { AddressDraft, addressLine, emptyAddress } from '../compo
 import DistanceBadge, { DistanceView, kmText, tierFor, useDistance } from '../components/DistanceBadge';
 import { checkPhone, maskPhone } from '../lib/phone';
 import { flushBluetoothQuiet } from '../lib/btprint';
-import { QuickNotes, SwapGroup } from '../components/QuickNotes';
+import { QuickNotes } from '../components/QuickNotes';
+import { stripSwaps } from '../lib/notes';
+import type { MenuPart } from '../lib/whatsapp';
 
 type Lookup = 'vazio' | 'incompleto' | 'invalido' | 'buscando' | 'encontrado' | 'novo' | 'erro';
 type AddrChoice = 'novo' | 'pedido' | number;
 
-interface MenuOpt { name: string; description: string; sizes: string[]; soldOut?: boolean }
+interface MenuOpt { name: string; description: string; sizes: string[]; soldOut?: boolean; parts?: MenuPart[] }
 interface Item { option: string; size: string; qty: string; price: string; notes: string }
 
 export default function OrderForm({ order, initialPhone, onClose, onSaved }: { order?: any; initialPhone?: string; onClose: () => void; onSaved: (o: any) => void }) {
@@ -23,7 +25,7 @@ export default function OrderForm({ order, initialPhone, onClose, onSaved }: { o
   const sizes = settings!.sizes;
   const priceOf = (size: string) => sizes.find((s) => s.name === size)?.priceCents ?? 0;
   // Opções do cardápio do dia (botões Opção 1 / Opção 2): cada uma pode limitar os tamanhos e pode estar esgotada
-  const [dayMenu, setDayMenu] = useState<{ saved: boolean; options: MenuOpt[]; swaps?: SwapGroup[] } | null>(null);
+  const [dayMenu, setDayMenu] = useState<{ saved: boolean; options: MenuOpt[] } | null>(null);
   const menuOpts: MenuOpt[] = (dayMenu?.options ?? (settings!.menuOptions ?? []).map((o) => ({ ...o, soldOut: false }))).filter((o) => o.name.trim());
   const originalOptions = new Set<string>((order?.items ?? []).map((i: any) => i.option).filter(Boolean));
   const sizesFor = (option: string) => {
@@ -39,8 +41,10 @@ export default function OrderForm({ order, initialPhone, onClose, onSaved }: { o
   const doPick = (i: number, option: string) => setItems((l) => l.map((x, j) => {
     if (j !== i) return x;
     const allowed = sizesFor(option);
-    if (allowed.some((s) => s.name === x.size)) return { ...x, option };
-    return { ...x, option, size: allowed[0].name, price: centsToInput(allowed[0].priceCents) };
+    // trocou de opção: as trocas da opção anterior não valem mais (o resto da observação fica)
+    const notes = x.option && x.option !== option ? stripSwaps(x.notes, menuOpts.find((o) => o.name === x.option)?.parts ?? []) : x.notes;
+    if (allowed.some((s) => s.name === x.size)) return { ...x, option, notes };
+    return { ...x, option, notes, size: allowed[0].name, price: centsToInput(allowed[0].priceCents) };
   }));
   const n = nowLocal(settings!.timezone);
   const key = useRef(crypto.randomUUID());
@@ -389,6 +393,8 @@ export default function OrderForm({ order, initialPhone, onClose, onSaved }: { o
                   <button type="button" aria-label="Mais uma" onClick={() => setItem(i, { qty: String(q + 1) })} className="h-10 w-10 text-xl font-bold text-slate-700">+</button>
                 </div>
               </div>
+              <QuickNotes index={i} value={it.notes} onChange={(v) => setItem(i, { notes: v })}
+                parts={menuOpts.find((o) => o.name === it.option)?.parts ?? []} quick={settings!.quickNotes ?? []} />
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <input aria-label={`Observação da marmita ${i + 1}`} className="input min-w-0 flex-1 basis-full py-1.5! text-sm sm:basis-auto" placeholder="Observação: sem salada, trocar o arroz…" value={it.notes} onChange={(e) => setItem(i, { notes: e.target.value })} />
                 {priceEdit.has(i) ? (
@@ -398,8 +404,6 @@ export default function OrderForm({ order, initialPhone, onClose, onSaved }: { o
                 )}
                 <span className="w-20 text-right text-sm font-semibold">{money(q * (parseCents(it.price) ?? 0))}</span>
               </div>
-              <QuickNotes index={i} value={it.notes} onChange={(v) => setItem(i, { notes: v })}
-                swaps={dayMenu?.saved ? (dayMenu.swaps ?? []) : []} quick={settings!.quickNotes ?? []} />
             </div>
           );
         })}

@@ -75,7 +75,8 @@ export function ticketEscPos(o: any, kindIn: TicketKind, settings: Settings): st
     count += Number(i.qty || 0);
     tall(`${i.qty}x ${i.size}${i.option ? ` - ${i.option}` : ''}`);
     if (i.optionDescription) text(i.optionDescription);
-    if (i.notes) tall(`>> ${String(i.notes).toUpperCase()}`);
+    // cada troca/observação numa linha: a cozinha lê de longe
+    for (const n of String(i.notes ?? '').split(/\s*;\s*/).filter(Boolean)) tall(`>> ${n.toUpperCase()}`);
     L.push('\n');
   }
   L.push(ESC + 'a\x02' + `${count} marmita${count === 1 ? '' : 's'}\n` + LEFT);

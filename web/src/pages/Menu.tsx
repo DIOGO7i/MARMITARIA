@@ -5,38 +5,57 @@ import { useApp } from '../lib/context';
 import { addDays } from '../lib/dates';
 import { dateBR, money } from '../lib/format';
 import { DayMenuOption, menuText, SwapGroup, waShare, weekdayBR } from '../lib/whatsapp';
+import { PartsEditor } from '../components/PartsEditor';
 import MenuImage from '../components/MenuImage';
 import { Button, ErrorBox, Field, PageHeader, useAction, useToast } from '../components/ui';
 
 interface MenuData { date: string; saved: boolean; options: DayMenuOption[]; swaps: SwapGroup[]; updatedAt: string | null; updatedBy: string | null; previous: { date: string; options: DayMenuOption[]; swaps?: SwapGroup[] } | null }
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
-// trocas no formulário: um item por linha
-type SwapDraft = { title: string; text: string };
-const toDraft = (l: SwapGroup[]): SwapDraft[] => l.map((g) => ({ title: g.title, text: g.items.join('\n') }));
-const fromDraft = (l: SwapDraft[]): SwapGroup[] => l.map((g) => ({ title: g.title.trim(), items: g.text.split('\n').map((x) => x.trim()).filter(Boolean) })).filter((g) => g.title || g.items.length);
+
+// Montagem por partes no formulário: as trocas são digitadas separadas por vírgula
+type PartDraft = { label: string; value: string; swapsText: string };
+type OptDraft = Omit<DayMenuOption, 'parts'> & { parts: PartDraft[] };
+const splitList = (t: string) => t.split(/[,;\n]/).map((x) => x.trim()).filter(Boolean);
+const NEW_PARTS: PartDraft[] = [
+  { label: 'Acompanhamento', value: 'Arroz e feijão', swapsText: '' },
+  { label: 'Carne', value: '', swapsText: '' },
+  { label: 'Guarnição', value: '', swapsText: '' },
+  { label: 'Salada', value: '', swapsText: '' },
+];
+/** Opção salva → formulário. Opção antiga (só com descrição) vira uma parte por item. */
+const toDraftOpt = (o: DayMenuOption): OptDraft => ({
+  ...o,
+  parts: o.parts?.length ? o.parts.map((p) => ({ label: p.label, value: p.value, swapsText: p.swaps.join(', ') }))
+    : o.description.trim() ? splitList(o.description).map((v) => ({ label: '', value: v, swapsText: '' }))
+    : NEW_PARTS.map((p) => ({ ...p })),
+});
+/** Formulário → como vai para o servidor (a descrição sai das partes). */
+const fromDraftOpt = (d: OptDraft): DayMenuOption => {
+  const parts = d.parts.map((p) => ({ label: p.label.trim(), value: p.value.trim(), swaps: splitList(p.swapsText) })).filter((p) => p.value || p.swaps.length);
+  return { name: d.name, description: parts.map((p) => p.value).filter(Boolean).join(', '), sizes: d.sizes, soldOut: !!d.soldOut, parts };
+};
 
 export default function MenuPage() {
   const { settings, today } = useApp();
   const toast = useToast();
   const [date, setDate] = useState(today);
   const [data, setData] = useState<MenuData | null>(null);
-  const [opts, setOpts] = useState<DayMenuOption[]>([]);
-  const [swaps, setSwaps] = useState<SwapDraft[]>([]);
-  const swapList = useMemo(() => fromDraft(swaps), [swaps]);
+  const [opts, setOpts] = useState<OptDraft[]>([]);
+  const ready = useMemo(() => opts.map(fromDraftOpt), [opts]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const act = useAction();
 
   const load = useCallback(async () => {
     setLoadError(null); setData(null);
-    try { const m = await api<MenuData>('GET', `/menu/${date}`); setData(m); setOpts(m.options); setSwaps(toDraft(m.swaps ?? [])); }
+    try { const m = await api<MenuData>('GET', `/menu/${date}`); setData(m); setOpts(m.options.map(toDraftOpt)); }
     catch (e: any) { setLoadError(e.message); }
   }, [date]);
   useEffect(() => { load(); }, [load]);
 
-  const dirty = !!data && (!data.saved || !same(opts, data.options) || !same(swapList, fromDraft(toDraft(data.swaps ?? []))));
-  const text = useMemo(() => menuText(opts, settings!, date, today, swapList), [opts, settings, date, today, swapList]);
-  const upd = (i: number, p: Partial<DayMenuOption>) => setOpts((l) => l.map((o, j) => (j === i ? { ...o, ...p } : o)));
+  const dirty = !!data && (!data.saved || !same(ready, data.options.map((o) => fromDraftOpt(toDraftOpt(o)))) || (data.swaps ?? []).some((g) => g.items.length > 0));
+  const text = useMemo(() => menuText(ready, settings!, date, today), [ready, settings, date, today]);
+  const upd = (i: number, p: Partial<OptDraft>) => setOpts((l) => l.map((o, j) => (j === i ? { ...o, ...p } : o)));
   const toggleSize = (i: number, size: string) => {
     const cur = opts[i].sizes.length ? opts[i].sizes : settings!.sizes.map((s) => s.name);
     const next = cur.includes(size) ? cur.filter((s) => s !== size) : [...cur, size];
@@ -48,8 +67,11 @@ export default function MenuPage() {
     const empty = opts.findIndex((o) => !o.name.trim());
     if (empty >= 0) throw new Error(`Dê um nome para a opção ${empty + 1}.`);
     if (opts.some((o) => o.sizes.length === 0 && settings!.sizes.length === 0)) throw new Error('Cadastre os tamanhos nas Configurações.');
-    const m = await api<MenuData>('PUT', `/menu/${date}`, { options: opts, swaps: swapList });
-    setData(m); setOpts(m.options); setSwaps(toDraft(m.swaps ?? []));
+    const semNada = ready.find((o) => !o.parts?.length);
+    if (semNada) throw new Error(`Diga o que vai na ${semNada.name}.`);
+    // as trocas agora ficam em cada opção; a lista antiga do dia (v21) é limpa
+    const m = await api<MenuData>('PUT', `/menu/${date}`, { options: ready, swaps: [] });
+    setData(m); setOpts(m.options.map(toDraftOpt));
     toast.ok(date === today ? 'Cardápio de hoje salvo. Os botões do pedido já mostram o que tem.' : `Cardápio de ${dateBR(date)} salvo.`);
   });
 
@@ -81,7 +103,7 @@ export default function MenuPage() {
       {data && (
         <>
           {!data.saved && data.previous && (
-            <button onClick={() => { setOpts(data.previous!.options.map((o) => ({ ...o, soldOut: false }))); if (data.previous!.swaps?.length) setSwaps(toDraft(data.previous!.swaps)); }}
+            <button onClick={() => setOpts(data.previous!.options.map((o) => toDraftOpt({ ...o, soldOut: false })))}
               className="mb-3 flex w-full items-center gap-2 rounded-lg border border-dashed border-brand-500 bg-brand-50 px-3 py-2.5 text-left text-sm font-semibold text-brand-700">
               <CopyPlus className="h-4 w-4 shrink-0" />Repetir o cardápio de {dateBR(data.previous.date)} ({data.previous.options.map((o) => o.name).join(', ')}) e só ajustar
             </button>
@@ -97,9 +119,7 @@ export default function MenuPage() {
                     <Field label="Nome do botão" className="flex-1"><input className="input font-bold" maxLength={40} value={o.name} onChange={(e) => upd(i, { name: e.target.value })} /></Field>
                     {opts.length > 1 && <Button variant="ghost" className="p-2!" aria-label={`Remover ${o.name || 'opção'}`} title="Remover opção" onClick={() => setOpts((l) => l.filter((_, j) => j !== i))}><Trash2 className="h-4 w-4" /></Button>}
                   </div>
-                  <Field label="O que vai nessa marmita">
-                    <textarea className="input" rows={2} maxLength={300} placeholder="Ex.: Frango grelhado, arroz, feijão, farofa e salada" value={o.description} onChange={(e) => upd(i, { description: e.target.value })} />
-                  </Field>
+                  <PartsEditor option={o.name || `Opção ${i + 1}`} parts={o.parts} onChange={(parts) => upd(i, { parts })} />
                   <Field label="Tamanhos dessa opção">
                     <div className="flex flex-wrap gap-2">
                       {settings!.sizes.map((s) => {
@@ -122,29 +142,12 @@ export default function MenuPage() {
             })}
           </div>
           {opts.length < 8 && (
-            <Button variant="secondary" className="mt-3" onClick={() => setOpts((l) => [...l, { name: `Opção ${l.length + 1}`, description: '', sizes: [], soldOut: false }])}>
+            <Button variant="secondary" className="mt-3" onClick={() => setOpts((l) => [...l, { name: `Opção ${l.length + 1}`, description: '', sizes: [], soldOut: false, parts: NEW_PARTS.map((p) => ({ ...p })) }])}>
               <Plus className="h-4 w-4" />Adicionar opção
             </Button>
           )}
 
-          <section className="card mt-4 p-4">
-            <h2 className="mb-1 font-bold">Trocas do dia</h2>
-            <p className="mb-3 text-sm text-slate-500">O que o cliente pode pedir no lugar. Um item por linha. Aparece no texto do WhatsApp e na imagem do cardápio.</p>
-            <div className="grid gap-3 lg:grid-cols-2">
-              {swaps.map((g, i) => (
-                <div key={i} className="space-y-2 rounded-lg border border-slate-200 p-3">
-                  <div className="flex items-end gap-2">
-                    <Field label="Título" className="flex-1"><input className="input" maxLength={60} value={g.title} onChange={(e) => setSwaps((l) => l.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)))} /></Field>
-                    <Button variant="ghost" className="p-2!" aria-label={`Remover ${g.title || 'grupo'}`} onClick={() => setSwaps((l) => l.filter((_, j) => j !== i))}><Trash2 className="h-4 w-4" /></Button>
-                  </div>
-                  <textarea aria-label={`Itens de ${g.title || 'trocas'}`} className="input" rows={4} placeholder={'Almôndegas ao sugo\nCoxa e sobrecoxa assada'} value={g.text} onChange={(e) => setSwaps((l) => l.map((x, j) => (j === i ? { ...x, text: e.target.value } : x)))} />
-                </div>
-              ))}
-            </div>
-            {swaps.length < 4 && <Button variant="secondary" className="mt-3" onClick={() => setSwaps((l) => [...l, { title: '', text: '' }])}><Plus className="h-4 w-4" />Adicionar grupo de trocas</Button>}
-          </section>
-
-          <MenuImage options={opts} swaps={swapList} date={date} />
+          <MenuImage options={ready} swaps={[]} date={date} />
 
           <section className="card mt-4 p-4">
             <h2 className="mb-2 flex items-center gap-2 font-bold"><MessageCircle className="h-4 w-4" />Mandar o cardápio no WhatsApp</h2>

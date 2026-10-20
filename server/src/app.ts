@@ -461,7 +461,8 @@ export function createApp(db: DB, jwtSecret: string, opts: { staticDir?: string;
   api.post('/orders/:id/print', wrap((req) => kitchen.reprint(C(req), id(req.params.id))));
 
   // Cardápio do dia (qualquer pessoa da equipe pode montar e marcar "esgotou")
-  const menuOption = z.object({ name: z.string(), description: z.string().max(300).optional().default(''), sizes: z.array(z.string()).optional().default([]), soldOut: z.boolean().optional().default(false) });
+  const menuOption = z.object({ name: z.string(), description: z.string().max(300).optional().default(''), sizes: z.array(z.string()).optional().default([]), soldOut: z.boolean().optional().default(false),
+    parts: z.array(z.object({ label: z.string().optional().default(''), value: z.string().optional().default(''), swaps: z.array(z.string()).optional().default([]) })).optional() });
   api.get('/menu/:date', wrap((req) => menu.getMenu(C(req), String(req.params.date))));
   api.put('/menu/:date', wrap((req) => {
     const b = z.object({ options: z.array(menuOption), swaps: z.array(z.object({ title: z.string(), items: z.array(z.string()) })).optional() }).parse(req.body);

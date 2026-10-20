@@ -3,7 +3,9 @@ import { audit, getSettings } from '../db';
 import { ValidationError } from '../money';
 import { Ctx, reqDate } from './common';
 
-export interface MenuOption { name: string; description: string; sizes: string[]; soldOut: boolean }
+/** Uma parte da marmita: "Carne: Frango empanado", que pode virar Almôndegas ou Omelete. */
+export interface MenuPart { label: string; value: string; swaps: string[] }
+export interface MenuOption { name: string; description: string; sizes: string[]; soldOut: boolean; parts?: MenuPart[] }
 /** Trocas do dia (ex.: "Opções para substituir a carne": Almôndegas, Coxa assada…). Saem no WhatsApp e na imagem do cardápio. */
 export interface SwapGroup { title: string; items: string[] }
 const DEFAULT_SWAPS: SwapGroup[] = [{ title: 'Para trocar a carne', items: [] }, { title: 'Para trocar a guarnição', items: [] }];
@@ -53,6 +55,29 @@ export function getMenu(ctx: Ctx, date: string) {
   };
 }
 
+/** Partes da marmita (Acompanhamento, Carne, Guarnição…) e o que cada uma pode virar. Partes vazias são descartadas. */
+function cleanParts(option: string, list: unknown): MenuPart[] {
+  if (list === undefined || list === null) return [];
+  if (!Array.isArray(list)) throw new ValidationError(`Montagem inválida na ${option}.`);
+  const out: MenuPart[] = [];
+  for (const p of list as any[]) {
+    const label = String(p?.label ?? '').trim();
+    const value = String(p?.value ?? '').trim();
+    const seen = new Set([value.toLowerCase()]);
+    const swaps = (Array.isArray(p?.swaps) ? p.swaps : []).map((x: unknown) => String(x ?? '').trim())
+      .filter((x: string) => x && !seen.has(x.toLowerCase()) && seen.add(x.toLowerCase()));
+    if (!value && !swaps.length) continue;
+    if (!value) throw new ValidationError(`${option}: diga o que vai em “${label || 'uma parte'}” antes das trocas.`);
+    if (label.length > 30) throw new ValidationError(`${option}: nome da parte muito longo: “${label.slice(0, 20)}…”.`);
+    if (value.length > 80) throw new ValidationError(`${option}: “${value.slice(0, 20)}…” está muito longo (máx. 80 letras).`);
+    if (swaps.length > 12) throw new ValidationError(`${option}: muitas trocas em “${label || value}” (máx. 12).`);
+    if (swaps.some((x: string) => x.length > 60)) throw new ValidationError(`${option}: uma troca em “${label || value}” está muito longa (máx. 60 letras).`);
+    out.push({ label, value, swaps });
+  }
+  if (out.length > 8) throw new ValidationError(`${option}: no máximo 8 partes.`);
+  return out;
+}
+
 function clean(ctx: Ctx, list: MenuOption[]): MenuOption[] {
   if (!Array.isArray(list) || list.length === 0) throw new ValidationError('O cardápio precisa de pelo menos uma opção.');
   if (list.length > 8) throw new ValidationError('No máximo 8 opções no cardápio.');
@@ -64,12 +89,14 @@ function clean(ctx: Ctx, list: MenuOption[]): MenuOption[] {
     if (name.length > 40) throw new ValidationError(`Nome da opção muito longo: “${name.slice(0, 20)}…”.`);
     if (seen.has(name.toLowerCase())) throw new ValidationError(`Há duas opções com o nome “${name}”.`);
     seen.add(name.toLowerCase());
-    const description = String(o.description ?? '').trim();
+    const parts = cleanParts(name, o.parts);
+    // Montada por partes: a descrição (WhatsApp, comanda, pedido) sai das partes, para nunca ficar diferente.
+    const description = parts.length ? parts.map((p) => p.value).join(', ') : String(o.description ?? '').trim();
     if (description.length > 300) throw new ValidationError(`A descrição da ${name} está muito longa (máx. 300 letras).`);
     const sz = [...new Set((o.sizes ?? []).map(String))];
     const bad = sz.find((s) => !sizes.has(s));
     if (bad) throw new ValidationError(`O tamanho “${bad}” não existe mais nas Configurações.`);
-    return { name, description, sizes: sz, soldOut: !!o.soldOut };
+    return parts.length ? { name, description, sizes: sz, soldOut: !!o.soldOut, parts } : { name, description, sizes: sz, soldOut: !!o.soldOut };
   });
 }
 

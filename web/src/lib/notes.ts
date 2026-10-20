@@ -10,6 +10,20 @@ export function swapText(title: string, item: string) {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+/** Parte do cardápio "Frango empanado" trocada por "Almôndegas" → "Trocar frango empanado por Almôndegas". */
+export function partSwapText(value: string, alt: string) {
+  const v = value.trim();
+  return `Trocar ${v.charAt(0).toLowerCase() + v.slice(1)} por ${alt.trim()}`;
+}
+type PartLike = { value: string; swaps: string[] };
+/** Todas as frases de troca possíveis de uma parte (para saber qual está escolhida e tirar as outras). */
+export const partSwapTexts = (p: PartLike) => p.swaps.map((a) => partSwapText(p.value, a));
+/** Tira da observação as trocas destas partes (ex.: a marmita mudou de opção). */
+export const stripSwaps = (notes: string, parts: PartLike[]) => {
+  const all = parts.flatMap(partSwapTexts);
+  return splitNotes(notes).filter((n) => !all.some((a) => same(a, n))).join(NOTE_SEP);
+};
+
 const same = (a: string, b: string) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }) === 0;
 export const hasNote = (notes: string, fragment: string) => splitNotes(notes).some((p) => same(p, fragment));
 

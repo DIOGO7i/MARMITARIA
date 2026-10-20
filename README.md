@@ -487,14 +487,17 @@ Para usar só com um celular Android e uma impressora térmica Bluetooth (ex.: *
 
 A partir daí, ao **registrar, alterar, cancelar ou reabrir** um pedido nesse celular, a comanda sai na hora (texto com comandos ESC/POS: número e tipo em letra grande, observações em negrito). Comandas que ficaram na fila (por exemplo, sem internet na hora) saem no próximo pedido ou pelo botão **Imprimir o que estiver esperando**. Se os acentos saírem errados, marque **"tirar os acentos"** nas Configurações. A escolha "Bluetooth" vale só para o aparelho onde foi ligada. Só funciona em Android (o iPhone não permite).
 
-## Trocas e observações rápidas no pedido (versão 29)
+## Cardápio montado por partes e trocas no pedido (versão 30)
 
-Embaixo de cada marmita do pedido aparecem botões:
-- **Trocas do dia**, montadas no **Cardápio** (ex.: "Para trocar a carne": Almôndegas, Coxa assada). Tocar escreve
-  "Trocar a carne por Almôndegas"; escolher outra carne do mesmo grupo substitui a anterior; tocar de novo apaga.
-- **Observações rápidas** ("Sem salada", "Molho à parte"...), editáveis em **Configurações**.
+No **Cardápio**, cada opção é montada por partes (Acompanhamento, Carne, Guarnição, Salada… — dá para renomear,
+tirar e pôr partes). Em cada parte: **o que vai** e **pelo que pode trocar** (separado por vírgula). Cada opção tem as próprias trocas.
+A descrição da opção (WhatsApp, imagem, comanda) é montada sozinha a partir das partes; o WhatsApp mostra
+"↪ Carne: pode trocar por Almôndegas ou Omelete".
 
-Tudo vai para a observação da marmita (que continua editável à mão) e sai na comanda da cozinha.
+No **pedido**, ao tocar na opção, aparecem botões por parte com o original marcado ("Carne: ✓ Frango empanado · Almôndegas · Omelete").
+Tocar numa troca escreve "Trocar frango empanado por Almôndegas" na observação da marmita; só uma troca por parte; tocar no original desfaz;
+mudar de opção tira as trocas da opção anterior. Na comanda, cada troca sai numa linha (">> TROCAR FRANGO EMPANADO POR ALMÔNDEGAS").
+Observações rápidas extras (ex.: "Sem cebola") podem ser cadastradas em Configurações; vêm vazias.
 
 ## 8. Suposições adotadas
 

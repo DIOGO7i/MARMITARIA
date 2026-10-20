@@ -28,8 +28,9 @@ export const DEFAULT_SETTINGS = {
     { name: 'Opção 1', description: '', sizes: ['350 g', '450 g'] },
     { name: 'Opção 2', description: '', sizes: ['650 g', '750 g'] },
   ] as { name: string; description: string; sizes: string[] }[],
-  // Botões de observação rápida em cada marmita do pedido (a atendente toca em vez de digitar)
-  quickNotes: ['Sem salada', 'Sem cebola', 'Sem feijão', 'Pouco arroz', 'Mais arroz', 'Molho à parte'],
+  // Botões de observação rápida em cada marmita do pedido, além das trocas
+  // (vazio: no pedido aparecem só as trocas de cada opção do cardápio; a Gisa pode cadastrar se quiser)
+  quickNotes: [] as string[],
   expenseCategories: ['Água', 'Energia elétrica', 'Gás', 'Aluguel', 'Internet', 'Manutenção', 'Taxas', 'Pagamento a entregadores', 'Outras despesas'],
   productCategories: ['Grãos', 'Carnes', 'Hortifruti', 'Embalagens', 'Bebidas', 'Temperos', 'Outros'],
   units: ['unidade', 'kg', 'g', 'litro', 'ml', 'pacote', 'caixa'],
@@ -146,6 +147,12 @@ function migrate(db: DB) {
     db.prepare("INSERT INTO settings(key, value) VALUES ('migr_endereco_gisa', 'true')").run();
   }
   db.exec("CREATE UNIQUE INDEX IF NOT EXISTS uq_purchases_access_key ON purchases(access_key) WHERE access_key IS NOT NULL AND status = 'confirmada'");
+  // v30: a lista padrão de observações rápidas da v29 (mais arroz, sem feijão…) sai; ficam só as trocas.
+  // Só limpa se ninguém mexeu na lista.
+  const qn = db.prepare("SELECT value FROM settings WHERE key = 'quickNotes'").get() as { value: string } | undefined;
+  if (qn?.value === JSON.stringify(['Sem salada', 'Sem cebola', 'Sem feijão', 'Pouco arroz', 'Mais arroz', 'Molho à parte'])) {
+    db.prepare("UPDATE settings SET value = '[]' WHERE key = 'quickNotes'").run();
+  }
 }
 
 function backfillCustomers(db: DB) {

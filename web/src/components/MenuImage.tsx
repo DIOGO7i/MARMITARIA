@@ -104,7 +104,8 @@ async function draw(fmt: Format, opts: DayMenuOption[], swaps: SwapGroup[], date
     y += 72 * s;
 
     shown.forEach((o, idx) => {
-      const items = itemsOf(o.description || '');
+      // montada por partes: cada parte numa linha, com as trocas logo depois ("Frango empanado (ou Almôndegas ou Omelete)")
+      const items = o.parts?.length ? o.parts.map((p) => (p.swaps.length ? `${p.value} (ou ${p.swaps.join(' ou ')})` : p.value)).map((x) => x[0].toUpperCase() + x.slice(1)) : itemsOf(o.description || '');
       const sz = sizes.filter((x) => !o.sizes.length || o.sizes.includes(x.name));
       // coluna dos preços (direita)
       ctx.font = `600 ${36 * s}px ${TEXT}`;

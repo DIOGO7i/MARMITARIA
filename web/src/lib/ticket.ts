@@ -42,7 +42,7 @@ export function ticketBody(o: any, kindIn: TicketKind, settings: Settings) {
   <div class="item">
     <div class="line"><span class="q">${esc(i.qty)}×</span> ${esc(i.size)}${i.option ? ` <span class="opt">${esc(i.option)}</span>` : ''}</div>
     ${i.optionDescription ? `<div class="desc">${esc(i.optionDescription)}</div>` : ''}
-    ${i.notes ? `<div class="note">» ${esc(i.notes)}</div>` : ''}
+    ${i.notes ? String(i.notes).split(/\s*;\s*/).filter(Boolean).map((n: string) => `<div class="note">» ${esc(n)}</div>`).join('') : ''}
   </div>`).join('')}
   <div class="count">${totalMarmitas} marmita${totalMarmitas === 1 ? '' : 's'}</div>
   ${o.notes ? `<hr><div class="note">OBS: ${esc(o.notes)}</div>` : ''}

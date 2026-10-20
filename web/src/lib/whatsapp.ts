@@ -33,7 +33,14 @@ export const WA_LABELS: Record<string, string> = {
   saiu_para_entrega: 'Saiu para entrega', entregue: 'Agradecimento', cancelado: 'Pedido cancelado',
 };
 
-export interface DayMenuOption { name: string; description: string; sizes: string[]; soldOut?: boolean }
+export interface MenuPart { label: string; value: string; swaps: string[] }
+export interface DayMenuOption { name: string; description: string; sizes: string[]; soldOut?: boolean; parts?: MenuPart[] }
+
+/** "Carne" + [Almôndegas, Omelete] → "Carne: pode trocar por Almôndegas ou Omelete" */
+export function swapLine(p: MenuPart) {
+  const list = p.swaps.length > 1 ? `${p.swaps.slice(0, -1).join(', ')} ou ${p.swaps[p.swaps.length - 1]}` : p.swaps[0];
+  return `${p.label.trim() || p.value.trim()}: pode trocar por ${list}`;
+}
 export interface SwapGroup { title: string; items: string[] }
 
 /** "terça-feira, 13/10" */
@@ -50,6 +57,7 @@ export function menuText(options: DayMenuOption[], settings: Settings, date: str
   for (const o of options.filter((x) => !x.soldOut && x.name.trim())) {
     lines.push(`*${o.name}*`);
     if (o.description.trim()) lines.push(o.description.trim());
+    for (const p of (o.parts ?? []).filter((x) => x.swaps.length)) lines.push(`↪ ${swapLine(p)}`);
     const sz = settings.sizes.filter((s) => !o.sizes.length || o.sizes.includes(s.name));
     lines.push(sz.map((s) => `${s.name} ${money(s.priceCents)}`).join(' · '));
     lines.push('');
