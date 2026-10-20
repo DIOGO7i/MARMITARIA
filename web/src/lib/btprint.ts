@@ -7,7 +7,7 @@ import { money } from './format';
 import type { Settings } from './context';
 import type { TicketKind } from './ticket';
 import { choiceLines } from './choices';
-import { getRawbtFormat, rawbtUrl, SELECT_CP860 } from './escpos';
+import { getRawbtFormat, rawbtUrl } from './escpos';
 
 const KEY = 'marmitaria.impressora';
 export type DeviceMode = 'nenhuma' | 'bluetooth';
@@ -30,7 +30,7 @@ const BANNER: Record<TicketKind, string | null> = {
   novo: null, alterado: 'PEDIDO ALTERADO', cancelado: 'CANCELADO - NAO FAZER', reaberto: 'PEDIDO REABERTO', reimpressao: '2a VIA', teste: 'TESTE DE IMPRESSAO',
 };
 
-const plain = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '');
+const plain = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[ºª]/g, (c) => (c === 'º' ? 'o' : 'a'));
 
 /** Quebra o texto em linhas de no máximo `cols` caracteres, sem cortar palavras. */
 export function wrap(text: string, cols: number): string[] {
@@ -52,7 +52,9 @@ export function wrap(text: string, cols: number): string[] {
 /** Comanda em texto para impressora térmica. 58 mm = 32 colunas; 80 mm = 48 colunas. */
 export function ticketEscPos(o: any, kindIn: TicketKind, settings: Settings): string {
   const cfg: any = settings.kitchenPrint ?? { paper: '58', showPrices: true, copies: 1 };
-  const cols = cfg.paper === '80' ? 48 : 32;
+  // Impressora Bluetooth de celular (5808 e parecidas) é de 58 mm: 32 letras por linha.
+  // O "papel" das Configurações vale para a impressora do computador.
+  const cols = 32;
   const half = Math.floor(cols / 2); // letra grande ocupa o dobro da largura
   const kind: TicketKind = o.status === 'cancelado' ? 'cancelado' : kindIn;
   const entrega = o.deliveryType === 'entrega';
@@ -62,7 +64,7 @@ export function ticketEscPos(o: any, kindIn: TicketKind, settings: Settings): st
   const tall = (t: string, width = cols) => L.push(TALL + BOLD + wrap(t, width).join('\n') + '\n' + NOBOLD + NORMAL);
   const text = (t: string) => L.push(wrap(t, cols).join('\n') + '\n');
 
-  L.push(INIT + SELECT_CP860 + CENTER);
+  L.push(INIT + CENTER);
   const banner = BANNER[kind];
   if (banner) { L.push(BOLD + '*'.repeat(cols) + '\n'); tall(banner); L.push(BOLD + '*'.repeat(cols) + '\n' + NOBOLD); }
   big(`#${o.number}`);
@@ -101,7 +103,8 @@ export function ticketEscPos(o: any, kindIn: TicketKind, settings: Settings): st
   L.push(CENTER + `\n${settings.establishment?.name ?? ''}\nimpresso ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}\n` + LEFT);
   L.push('\n\n\n\n'); // espaço para destacar o papel (a 5808 não tem guilhotina)
   let one = L.join('').replace(/ /g, ' ');
-  if (cfg.noAccents) one = plain(one);
+  // Sem acentos: essas impressoras vêm no modo chinês e trocam letra acentuada por ideograma ("Op妝o").
+  one = plain(one);
   return Array.from({ length: Math.max(1, Math.min(3, cfg.copies ?? 1)) }, () => one).join('');
 }
 

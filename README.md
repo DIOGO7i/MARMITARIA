@@ -508,6 +508,12 @@ Até a v31 o texto ia direto e o RawBT imprimia só o aviso da versão grátis. 
 com os acentos na tabela **PC860** (português, `ESC t 3`). Se a impressora mostrar acentos trocados, ligue
 "tirar os acentos" em Configurações → Impressora da cozinha. Código em `web/src/lib/escpos.ts`.
 
+## Comanda Bluetooth legível na 5808 (versão 34)
+
+A 5808 (e parecidas) vem no **modo chinês**: letra acentuada vira ideograma ("Op妝o"). Por isso a comanda Bluetooth
+sai **sempre sem acento** ("OPCAO", "GUARNICAO", "PURE") e **sempre com 32 letras por linha** (58 mm) — o "papel"
+das Configurações vale só para a impressora do computador. Na tela Cozinha ficam os testes A–D e o número da versão.
+
 ## 8. Suposições adotadas
 
 - Um único estabelecimento, fuso **America/Sao_Paulo**, moeda real (R$).
