@@ -7,6 +7,7 @@ import { money } from './format';
 import type { Settings } from './context';
 import type { TicketKind } from './ticket';
 import { choiceLines } from './choices';
+import { rawbtUrl, SELECT_CP860 } from './escpos';
 
 const KEY = 'marmitaria.impressora';
 export type DeviceMode = 'nenhuma' | 'bluetooth';
@@ -61,7 +62,7 @@ export function ticketEscPos(o: any, kindIn: TicketKind, settings: Settings): st
   const tall = (t: string, width = cols) => L.push(TALL + BOLD + wrap(t, width).join('\n') + '\n' + NOBOLD + NORMAL);
   const text = (t: string) => L.push(wrap(t, cols).join('\n') + '\n');
 
-  L.push(INIT + CENTER);
+  L.push(INIT + SELECT_CP860 + CENTER);
   const banner = BANNER[kind];
   if (banner) { L.push(BOLD + '*'.repeat(cols) + '\n'); tall(banner); L.push(BOLD + '*'.repeat(cols) + '\n' + NOBOLD); }
   big(`#${o.number}`);
@@ -106,7 +107,8 @@ export function ticketEscPos(o: any, kindIn: TicketKind, settings: Settings): st
 
 /** Entrega o texto para o RawBT imprimir. Precisa ser chamado logo depois de um toque na tela. */
 export function sendToRawBT(data: string) {
-  const url = 'intent:' + encodeURIComponent(data) + '#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;';
+  // O RawBT só entende a comanda em base64 (texto direto ele ignora e imprime só o aviso dele)
+  const url = rawbtUrl(data);
   const hook = (window as any).__rawbtHook; // usado só nos testes automáticos
   if (typeof hook === 'function') hook(url); else window.location.href = url;
 }

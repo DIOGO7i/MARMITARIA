@@ -501,6 +501,13 @@ mais que o limite, o servidor recusa. Item esgotado ou fora do cardápio é recu
 Escolhas ficam em `order_items.choices`; a descrição gravada é "Arroz e feijão, Bisteca, 2x Purê".
 **Comanda**: "CARNE: BISTECA" / "GUARNIÇÕES: 2x PURÊ" em letra alta. WhatsApp e imagem listam as carnes e guarnições do dia.
 
+## Impressão Bluetooth: formato do RawBT corrigido (versão 32)
+
+O RawBT só entende a comanda em **base64** (`intent:base64,<bytes>#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;`).
+Até a v31 o texto ia direto e o RawBT imprimia só o aviso da versão grátis. Agora os bytes ESC/POS vão em base64,
+com os acentos na tabela **PC860** (português, `ESC t 3`). Se a impressora mostrar acentos trocados, ligue
+"tirar os acentos" em Configurações → Impressora da cozinha. Código em `web/src/lib/escpos.ts`.
+
 ## 8. Suposições adotadas
 
 - Um único estabelecimento, fuso **America/Sao_Paulo**, moeda real (R$).
