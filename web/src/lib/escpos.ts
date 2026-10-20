@@ -22,9 +22,17 @@ export function toPrinterBytes(text: string): string {
   return out;
 }
 
-/** Endereço que abre o RawBT e manda os bytes para a impressora. */
-export function rawbtUrl(escpos: string): string {
-  return `intent:base64,${btoa(toPrinterBytes(escpos))}#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;`;
+const TAIL = '#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;';
+/** 'base64' = bytes em base64 (padrão); 'texto' = texto no endereço (jeito antigo do exemplo oficial do RawBT). */
+export type RawbtFormat = 'base64' | 'texto';
+const FKEY = 'marmitaria.rawbt';
+export function getRawbtFormat(): RawbtFormat { try { return localStorage.getItem(FKEY) === 'texto' ? 'texto' : 'base64'; } catch { return 'base64'; } }
+export function setRawbtFormat(f: RawbtFormat) { try { localStorage.setItem(FKEY, f); } catch { /* sem armazenamento */ } }
+
+/** Endereço que abre o RawBT e manda a comanda para a impressora. */
+export function rawbtUrl(escpos: string, format: RawbtFormat = 'base64'): string {
+  if (format === 'texto') return `intent:${encodeURI(escpos).replace(/#/g, '%23')}${TAIL}`; // "#12" não pode cortar o endereço
+  return `intent:base64,${btoa(toPrinterBytes(escpos))}${TAIL}`;
 }
 
 /** O contrário (para conferir nos testes o que foi mandado). */

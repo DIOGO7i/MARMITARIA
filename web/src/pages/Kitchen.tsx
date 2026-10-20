@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Bluetooth, CheckCircle2, Monitor, Pause, Play, Printer, RotateCcw, Smartphone, WifiOff } from 'lucide-react';
-import { DeviceMode, flushBluetooth, getDeviceMode, isAndroid, setDeviceMode, testBluetooth } from '../lib/btprint';
+import { DeviceMode, diagnoseRawBT, flushBluetooth, getDeviceMode, isAndroid, setDeviceMode, testBluetooth } from '../lib/btprint';
+import { getRawbtFormat, RawbtFormat, setRawbtFormat } from '../lib/escpos';
 import { api } from '../lib/api';
 import { useApp } from '../lib/context';
 import { printTicket, ticketHtml, TicketKind } from '../lib/ticket';
@@ -32,6 +33,7 @@ export default function Kitchen() {
   const { settings } = useApp();
   const toast = useToast();
   const [on, setOn] = useState(false);
+  const [fmt, setFmt] = useState<RawbtFormat>(getRawbtFormat);
   const [busy, setBusy] = useState(false);
   const [offline, setOffline] = useState(false);
   const [lastCheck, setLastCheck] = useState<Date | null>(null);
@@ -145,6 +147,25 @@ export default function Kitchen() {
             <Button className="py-3! text-base" onClick={printPending}><Printer className="h-5 w-5" />{pending ? `Imprimir ${pending} esperando` : 'Imprimir o que estiver esperando'}</Button>
             <Button variant="secondary" onClick={test}>Imprimir teste</Button>
           </div>
+          <details className="mt-4 rounded-lg border border-slate-200 p-3 text-sm">
+            <summary className="cursor-pointer font-semibold">Saiu só o aviso do RawBT? Faça estes testes</summary>
+            <p className="mt-2 text-slate-600">Toque em cada um e veja qual imprime o texto <strong>além</strong> do aviso “versão gratuita”. Depois escolha abaixo o jeito que funcionou.</p>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              {(['A', 'B', 'C', 'D'] as const).map((k) => (
+                <Button key={k} variant="secondary" onClick={() => diagnoseRawBT(k, settings!)}>
+                  Teste {k}<span className="text-xs font-normal text-slate-500">{k === 'A' ? ' texto' : k === 'B' ? ' base64' : k === 'C' ? ' comanda base64' : ' comanda texto'}</span>
+                </Button>
+              ))}
+            </div>
+            <div className="mt-3 flex flex-wrap items-center gap-2" role="radiogroup" aria-label="Jeito de mandar para o RawBT">
+              <span className="font-medium">Jeito de mandar:</span>
+              {([['base64', 'Base64 (B / C)'], ['texto', 'Texto (A / D)']] as [RawbtFormat, string][]).map(([k, t]) => (
+                <button key={k} type="button" role="radio" aria-checked={fmt === k} onClick={() => { setRawbtFormat(k); setFmt(k); }}
+                  className={`rounded-full border px-3 py-1 text-xs font-semibold ${fmt === k ? 'border-brand-500 bg-brand-500 text-white' : 'border-slate-300'}`}>{t}</button>
+              ))}
+            </div>
+          </details>
+          <p className="mt-3 text-right text-xs text-slate-400">Versão {__APP_VERSION__}</p>
         </section>
       ) : (
         <section className={`card mb-4 p-5 ${on ? 'border-green-300' : ''}`}>

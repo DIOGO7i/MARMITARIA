@@ -7,7 +7,7 @@ import { money } from './format';
 import type { Settings } from './context';
 import type { TicketKind } from './ticket';
 import { choiceLines } from './choices';
-import { rawbtUrl, SELECT_CP860 } from './escpos';
+import { getRawbtFormat, rawbtUrl, SELECT_CP860 } from './escpos';
 
 const KEY = 'marmitaria.impressora';
 export type DeviceMode = 'nenhuma' | 'bluetooth';
@@ -108,7 +108,7 @@ export function ticketEscPos(o: any, kindIn: TicketKind, settings: Settings): st
 /** Entrega o texto para o RawBT imprimir. Precisa ser chamado logo depois de um toque na tela. */
 export function sendToRawBT(data: string) {
   // O RawBT só entende a comanda em base64 (texto direto ele ignora e imprime só o aviso dele)
-  const url = rawbtUrl(data);
+  const url = rawbtUrl(data, getRawbtFormat());
   const hook = (window as any).__rawbtHook; // usado só nos testes automáticos
   if (typeof hook === 'function') hook(url); else window.location.href = url;
 }
@@ -137,11 +137,23 @@ export function flushBluetoothQuiet(settings: Settings | null | undefined) {
   flushBluetooth(settings).catch(() => { /* fica na fila e sai no próximo */ });
 }
 
-export function testBluetooth(settings: Settings) {
-  sendToRawBT(ticketEscPos({
+function ticketTest(settings: Settings) {
+  return ticketEscPos({
     number: 0, orderTime: new Date().toTimeString().slice(0, 5), source: 'presencial', deliveryType: 'entrega', customerName: 'Teste da impressora',
     address: 'Rua das Flores, 123 - ap. 4', neighborhood: 'Centro', customerPhone: '(11) 98888-7777',
     items: [{ qty: 2, size: '650 g', option: 'Opção 2', optionDescription: 'Arroz e feijão, Frango empanado, 2x Purê', choices: { carnes: ['Frango empanado'], guarnicoes: ['Purê', 'Purê'] }, notes: 'sem cebola' }],
     totalCents: 3500, paidCents: 0, paymentMethod: 'Pix', notes: 'Acentos: ação, pão, café, maçã',
-  }, 'teste', settings));
+  }, 'teste', settings);
+}
+export function testBluetooth(settings: Settings) { sendToRawBT(ticketTest(settings)); }
+
+/** Testes para descobrir qual jeito de mandar funciona com o RawBT e a impressora deste celular. */
+export function diagnoseRawBT(kind: 'A' | 'B' | 'C' | 'D', settings: Settings) {
+  const plain = `TESTE ${kind}\nSe esta linha saiu, o teste ${kind} funciona.\nAcentos: acao pao cafe\n\n\n\n`;
+  const send = (u: string) => { const hook = (window as any).__rawbtHook; if (typeof hook === 'function') hook(u); else window.location.href = u; };
+  const tail = '#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;';
+  if (kind === 'A') send(`intent:${encodeURI(plain)}${tail}`);                // texto simples, jeito do exemplo oficial
+  if (kind === 'B') send(`intent:base64,${btoa(plain)}${tail}`);              // texto simples em base64
+  if (kind === 'C') send(rawbtUrl(ticketTest(settings), 'base64'));             // comanda completa em base64
+  if (kind === 'D') send(rawbtUrl(ticketTest(settings), 'texto'));              // comanda completa como texto
 }
