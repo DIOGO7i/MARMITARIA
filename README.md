@@ -514,6 +514,13 @@ A 5808 (e parecidas) vem no **modo chinês**: letra acentuada vira ideograma ("O
 sai **sempre sem acento** ("OPCAO", "GUARNICAO", "PURE") e **sempre com 32 letras por linha** (58 mm) — o "papel"
 das Configurações vale só para a impressora do computador. Na tela Cozinha ficam os testes A–D e o número da versão.
 
+## Apagar dados de teste (versão 35)
+
+Configurações → **Apagar dados de teste** (só a responsável): apaga os **pedidos** até uma data (com recebimentos,
+comandas da fila e baixas de estoque, que voltam para o saldo) e/ou **todos os clientes**. Cardápio, preços,
+configurações, equipe, compras, despesas e estoque ficam; a numeração volta para o #1. Pede para digitar APAGAR e
+**baixa uma cópia de segurança antes** (`marmitaria-antes-de-limpar.db`). Endpoint: `POST /api/limpar-testes`.
+
 ## 8. Suposições adotadas
 
 - Um único estabelecimento, fuso **America/Sao_Paulo**, moeda real (R$).

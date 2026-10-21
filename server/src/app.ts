@@ -18,6 +18,7 @@ import * as recipes from './services/recipes';
 import * as cash from './services/cash';
 import * as customers from './services/customers';
 import * as menu from './services/menu';
+import { cleanupTestData } from './services/cleanup';
 import { Modules, modulesFromEnv } from './modules';
 import { cachedDistance, fullAddress, RouteFn, routeFromEnv } from './distance';
 import { originPoint, PlacesApi, placesFromEnv } from './places';
@@ -271,7 +272,7 @@ export function createApp(db: DB, jwtSecret: string, opts: { staticDir?: string;
   const isStaff = (req: Request) => C(req).role !== 'owner';
   // Parte de GESTÃO (financeiro): só a responsável. O funcionário nem recebe esses dados do servidor.
   const OWNER_ONLY = ['/cash', '/purchases', '/expenses', '/suppliers', '/recipes', '/users', '/stock/verify', '/stock/adjust',
-    '/reports/payables', '/reports/summary', '/reports/monthly', '/reports/stock', '/backup'];
+    '/reports/payables', '/reports/summary', '/reports/monthly', '/reports/stock', '/backup', '/limpar-testes'];
   api.use(OWNER_ONLY, (req, _res, next) => next(isStaff(req) ? err(403, 'Esta parte é só da responsável.') : undefined));
   // Custos e valores de estoque/cliente não vão para o funcionário (ele vê quantidades, não quanto custou)
   const HIDDEN = new Set(['unitCostCents', 'valueCents', 'totalSpentCents', 'prevUnitCostCents', 'unit_cost_cents', 'prev_unit_cost_cents', 'totalValueCents']);
@@ -340,6 +341,11 @@ export function createApp(db: DB, jwtSecret: string, opts: { staticDir?: string;
   // Configurações
   api.get('/settings', wrap(() => ({ ...getSettings(db), modules })));
   // Cópia de segurança completa do banco (só a responsável). Feita com VACUUM INTO: cópia consistente mesmo com o sistema em uso.
+  // Apagar pedidos/clientes de teste antes de começar a usar de verdade (a tela baixa uma cópia antes)
+  api.post('/limpar-testes', wrap((req) => {
+    const b = z.object({ confirm: z.literal('APAGAR', { errorMap: () => ({ message: 'Digite APAGAR para confirmar.' }) }), pedidos: z.boolean(), clientes: z.boolean(), ate: dateStr }).parse(req.body);
+    return cleanupTestData(C(req), { orders: b.pedidos, customers: b.clientes, upTo: b.ate });
+  }));
   api.get('/backup', (req, res, next) => {
     try {
       const tmp = path.join(os.tmpdir(), `marmitaria-backup-${process.pid}-${Date.now()}.db`);

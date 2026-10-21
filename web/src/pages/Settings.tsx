@@ -7,6 +7,7 @@ import { Button, ErrorBox, Field, PageHeader, useAction, useToast } from '../com
 import SecuritySettings from '../components/SecuritySettings';
 import TeamSettings from '../components/TeamSettings';
 import BackupSettings from '../components/BackupSettings';
+import CleanupSettings from '../components/CleanupSettings';
 import { getScreenMode, ScreenMode, setScreenMode } from '../lib/screen';
 import { Monitor, Smartphone, Wand2 } from 'lucide-react';
 import { THEME_LABEL, ThemeMode, useTheme } from '../lib/theme';
@@ -209,6 +210,7 @@ export default function SettingsPage() {
       </fieldset>
       {owner && <div className="mt-4"><Button loading={act.busy} onClick={save}>Salvar configurações</Button></div>}
       {owner && <div className="mt-6"><BackupSettings /></div>}
+      {owner && <div className="mt-6"><CleanupSettings /></div>}
       <div className="mt-6"><TeamSettings /></div>
       <div className="mt-6"><AppearanceSettings /></div>
       <div className="mt-6"><SecuritySettings /></div>
