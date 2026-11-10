@@ -521,6 +521,13 @@ comandas da fila e baixas de estoque, que voltam para o saldo) e/ou **todos os c
 configurações, equipe, compras, despesas e estoque ficam; a numeração volta para o #1. Pede para digitar APAGAR e
 **baixa uma cópia de segurança antes** (`marmitaria-antes-de-limpar.db`). Endpoint: `POST /api/limpar-testes`.
 
+## Senha esquecida, trocada pelo painel da hospedagem (versão 36)
+
+Sem e-mail configurado e sem terminal (Render grátis): no painel do Render → serviço → **Environment**, crie
+`REDEFINIR_SENHA_EMAIL` (e-mail da pessoa) e `REDEFINIR_SENHA_NOVA` (senha nova) e salve (o Render reinicia).
+O log mostra "senha de … trocada". A troca vale uma vez por par e-mail+senha (reiniciar não desfaz uma troca posterior),
+reativa o acesso e desconecta os aparelhos. Depois de entrar, **apague as duas variáveis**.
+
 ## 8. Suposições adotadas
 
 - Um único estabelecimento, fuso **America/Sao_Paulo**, moeda real (R$).

@@ -33,6 +33,31 @@ export function setPassword(db: DB, userId: number, newPassword: string) {
 
 export const sha256 = (s: string) => crypto.createHash('sha256').update(s).digest('hex');
 
+/**
+ * Esqueceu a senha e não tem e-mail nem terminal (ex.: Render grátis)? Quem tem acesso ao painel da hospedagem coloca
+ *   REDEFINIR_SENHA_EMAIL = e-mail da pessoa   e   REDEFINIR_SENHA_NOVA = senha nova
+ * e reinicia. A troca vale UMA vez para cada par (e-mail + senha): reiniciar de novo com as mesmas variáveis não desfaz
+ * uma senha que a pessoa trocou depois. Depois de entrar, apague as duas variáveis.
+ */
+export function resetPasswordFromEnv(db: DB, env = process.env): string | null {
+  const email = env.REDEFINIR_SENHA_EMAIL?.trim();
+  const pw = env.REDEFINIR_SENHA_NOVA ?? '';
+  if (!email && !pw) return null;
+  if (!email || !pw) return 'REDEFINIR_SENHA: preencha as duas variáveis (REDEFINIR_SENHA_EMAIL e REDEFINIR_SENHA_NOVA).';
+  const mark = sha256(`${email.toLowerCase()}\n${pw}`);
+  const done = db.prepare("SELECT 1 FROM audit_log WHERE action = 'senha_redefinida_pelo_painel' AND detail = ?").get(JSON.stringify({ marca: mark }));
+  if (done) return 'REDEFINIR_SENHA: essa troca já foi feita antes. Apague as variáveis REDEFINIR_SENHA_* no painel.';
+  const u = db.prepare('SELECT id, name FROM users WHERE lower(email) = lower(?)').get(email) as { id: number; name: string } | undefined;
+  if (!u) {
+    const list = (db.prepare('SELECT email FROM users ORDER BY id').all() as { email: string }[]).map((x) => x.email);
+    return `REDEFINIR_SENHA: nenhum acesso com o e-mail ${email}. Cadastrados: ${list.join(', ') || 'nenhum'}.`;
+  }
+  try { setPassword(db, u.id, pw); } catch (e) { return `REDEFINIR_SENHA: ${(e as Error).message}`; }
+  db.prepare('UPDATE users SET active = 1 WHERE id = ?').run(u.id);
+  db.prepare("INSERT INTO audit_log(entity, entity_id, action, detail, user_id) VALUES ('usuario', ?, 'senha_redefinida_pelo_painel', ?, NULL)").run(u.id, JSON.stringify({ marca: mark }));
+  return `REDEFINIR_SENHA: senha de ${u.name} trocada. Ela já pode entrar. Apague as variáveis REDEFINIR_SENHA_* no painel.`;
+}
+
 export interface Mailer { send(to: string, subject: string, text: string, html: string): Promise<void> }
 
 /** Usa SMTP_HOST/SMTP_PORT/SMTP_USER/SMTP_PASS/SMTP_FROM. Sem SMTP_HOST, o envio por e-mail fica desativado. */

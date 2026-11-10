@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { createApp } from './app';
 import { openDb } from './db';
 import { restoreFromCloud, startCloudSync } from './cloudsync';
+import { resetPasswordFromEnv } from './auth';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 // Carrega o .env da raiz do projeto, se existir (variáveis já definidas no ambiente têm prioridade).
@@ -28,6 +29,8 @@ if (cloudUrl) {
 }
 const db = openDb(dbFile);
 const sync = cloudUrl ? startCloudSync(db, cloudUrl) : null;
+// Senha esquecida, trocada pelo painel da hospedagem (depois de ligar a cópia na nuvem, para a troca ser guardada lá)
+{ const msg = resetPasswordFromEnv(db); if (msg) console.log(msg); }
 
 // Segredo do JWT: variável de ambiente (recomendado em produção) ou arquivo gerado automaticamente.
 let secret = process.env.JWT_SECRET;
