@@ -88,7 +88,7 @@ describe('compras e estoque', () => {
     expect(getProduct(ctx, arroz.id).qtyMilli).toBe(0);
     expect(verifyBalances(ctx.db)).toEqual([]);
     expect(() => cancelPurchase(ctx, c.id, 'de novo')).toThrow(/já foi cancelada/);
-    const s = summary(ctx, '2026-10-01', '2026-10-31');
+    const s = summary(ctx, D.slice(0, 8) + '01', D.slice(0, 8) + '31'); // mês de hoje
     expect(s.purchasesCents).toBe(0);
     expect(s.paymentsMadeCents).toBe(0);
   });
@@ -196,7 +196,7 @@ describe('pedidos', () => {
     const o = order();
     const p = addOrderPayment(ctx, o.id, { amountCents: 1000, method: 'Pix' });
     expect(p.paymentStatus).toBe('parcial');
-    const s = summary(ctx, '2026-10-01', '2026-10-31');
+    const s = summary(ctx, D.slice(0, 8) + '01', D.slice(0, 8) + '31'); // mês de hoje
     expect(s.salesCents).toBe(4400);
     expect(s.receivedCents).toBe(1000);
     expect(s.receivableCents).toBe(3400);
